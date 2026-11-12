@@ -99,7 +99,7 @@ textarea{width:100%;height:280px;padding:8px}
   <div class="legend">
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
-    الحضور والدرس وصلاة واجتماع ويوم روحي وشماس: لو اخترت لا ينطبق لخادم، بتتطبق على كل الخدام في الأسبوع. افتقاد وتسبحة وتناول واعتراف: رمادي، تم، لم يتم.<br>
+    لو الحضور = غياب، الصلاة والدرس والاجتماع بتتحول لم يتم تلقائي. لو التناول = لم يتم، الشماس بيتحول لم يتم تلقائي. زرار "للكل" فوق بيطبق الاختيار على كل الخدام.<br>
     حضور أو تأخير أو تحضير أو إلقاء = حضور. غياب أو لم يتم = غياب. لا ينطبق مش بتدخل في المجموع.<br>
     المجاميع بتجمع الأسابيع داخل الفلتر. الخانة الحمرا = الخادم ماعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
   </div>
@@ -167,6 +167,20 @@ let fromD = "", toD = "";
 
 function blank(){ const o={tel:0, visit:0, note:""}; items.forEach(i=>o[i.k]=0); return o; }
 function rec(w, n){ if(!w.rec[n]) w.rec[n]=blank(); return w.rec[n]; }
+function idxOf(key, label){ return items.find(i => i.k === key).s.findIndex(s => s.t === label); }
+// automatic changes that follow from one choice, for the same servant and week
+function cascade(w, n, key, value){
+  const r = rec(w, n);
+  const label = items.find(i => i.k === key).s[value].t;
+  if (key === "att" && label === "غياب") {
+    r.salat = idxOf("salat", "لم يتم");
+    r.ejtema = idxOf("ejtema", "لم يتم");
+    r.lesson = idxOf("lesson", "لم يتم");
+  }
+  if (key === "tanawol" && label === "لم يتم") {
+    r.shamas = idxOf("shamas", "لم يتم");
+  }
+}
 function ensureState(){
   if (!Array.isArray(S.servants)) S.servants = [];
   if (!Array.isArray(S.weeks)) S.weeks = [];
@@ -310,9 +324,7 @@ $("rows").onclick = e => {
   const r = rec(w, b.dataset.n);
   const it = items.find(i => i.k === b.dataset.k);
   r[it.k] = (r[it.k] + 1) % it.s.length;
-  if (NA_KEYS.includes(it.k) && it.s[r[it.k]].t === "لا ينطبق") {
-    S.servants.forEach(n => { rec(w, n)[it.k] = r[it.k]; });
-  }
+  cascade(w, b.dataset.n, it.k, r[it.k]);
   changed();
 };
 $("rows").onchange = e => {
@@ -328,7 +340,7 @@ $("thT").onchange = e => {
   if (!k || e.target.value === "") return;
   const idx = +e.target.value;
   const w = S.weeks[cur];
-  S.servants.forEach(n => { rec(w, n)[k] = idx; });
+  S.servants.forEach(n => { rec(w, n)[k] = idx; cascade(w, n, k, idx); });
   changed();
 };
 $("wk").onchange = e => { cur = +e.target.value; render(); };
