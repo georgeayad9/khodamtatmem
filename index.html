@@ -10,29 +10,50 @@
 <title>متابعة الخدام</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:12px;background:#fafafa;color:#222}
+:root{--bg:#fafafa;--card:#fff;--text:#222;--muted:#555;--border:#ddd;--btnb:#bbb;--head:#f2f2f2;--green:#1d6f42;--warn:#fde2e2;--warnt:#a32020}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1c1c1e;--card:#2c2c2e;--text:#eee;--muted:#aaa;--border:#555;--btnb:#666;--head:#3a3a3c;--green:#2e9e5b;--warn:#5a2222;--warnt:#ffb3b3}
+}
+*{box-sizing:border-box}
+input,select,textarea{font-size:16px;background:var(--card);color:var(--text);border:1px solid var(--btnb);border-radius:6px;padding:5px}
+body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:12px;background:var(--bg);color:var(--text)}
 h2{margin:6px 0 10px}
-button{cursor:pointer;border-radius:6px;border:1px solid #bbb;background:#fff;padding:6px 12px;font-size:13px}
-button.primary{background:#1d6f42;color:#fff;border-color:#1d6f42}
+button{cursor:pointer;border-radius:6px;border:1px solid var(--btnb);background:var(--card);color:var(--text);padding:6px 12px;font-size:13px}
+button.primary{background:var(--green);color:#fff;border-color:var(--green)}
+button.danger{background:#d64545;color:#fff;border-color:#d64545}
 .bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.bar select,.bar input{padding:5px;border:1px solid #bbb;border-radius:6px;font-size:13px}
-table{border-collapse:collapse;width:100%;font-size:12px;text-align:center;background:#fff}
-th,td{border:1px solid #ddd;padding:4px}
-th{background:#f2f2f2}
+table{border-collapse:collapse;width:100%;font-size:12px;text-align:center;background:var(--card)}
+th,td{border:1px solid var(--border);padding:4px}
+th{background:var(--head)}
+td.sticky,th.sticky{position:sticky;right:0;z-index:1;background:var(--card)}
+th.sticky{background:var(--head)}
+td.warn{background:var(--warn);color:var(--warnt);cursor:pointer}
+.nm{cursor:pointer;text-decoration:underline}
 .st{width:80px;padding:5px 2px;border:none;border-radius:6px;color:#fff;font-size:11px}
-input[type=number]{width:46px;padding:3px}
-textarea{width:100%;height:280px;font-size:15px;padding:8px;box-sizing:border-box;border:1px solid #bbb;border-radius:6px}
+input[type=number]{width:56px;padding:3px}
+textarea{width:100%;height:280px;padding:8px}
 .wrap{overflow-x:auto}
 .hidden{display:none !important}
-.legend{font-size:12px;color:#555;line-height:1.9;margin-top:12px}
-.status{font-size:12px;color:#777;margin-bottom:8px}
+.legend{font-size:12px;color:var(--muted);line-height:1.9;margin-top:12px}
+.status{font-size:12px;color:var(--muted);margin-bottom:8px}
+.report{background:var(--card);padding:12px;border-radius:10px}
+@media (max-width:600px){
+  .st{width:92px;padding:9px 4px;font-size:12px}
+  button{padding:9px 12px}
+  td,th{padding:6px 4px}
+}
+@media print{
+  #main,#setup,#report .noprint{display:none !important}
+  #report{display:block !important}
+  body{background:#fff;color:#000}
+}
 </style>
 </head>
 <body>
 
 <div id="setup" class="hidden">
   <h2>إضافة الخدام</h2>
-  <p style="font-size:13px;color:#555">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
+  <p style="font-size:13px;color:var(--muted)">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
   <textarea id="names"></textarea>
   <div class="bar" style="margin-top:8px">
     <button class="primary" id="done">Done</button>
@@ -46,12 +67,26 @@ textarea{width:100%;height:280px;font-size:15px;padding:8px;box-sizing:border-bo
     <button id="editNames">تعديل الخدام</button>
     <input id="newName" placeholder="خادم جديد">
     <button id="addSrv">إضافة خادم</button>
+    <select id="delSel"></select>
+    <button class="danger" id="delBtn">حذف الخادم</button>
+  </div>
+  <div class="bar">
     <select id="wk"></select>
     <input type="date" id="wkDate">
     <button id="addWk">أسبوع جديد</button>
     <button id="tabTrack">المتابعة</button>
     <button id="tabSum">المجاميع</button>
-    <button class="primary" id="exp" style="margin-inline-start:auto">تصدير إكسيل</button>
+  </div>
+  <div class="bar">
+    <label>من</label><input type="date" id="fromD">
+    <label>إلى</label><input type="date" id="toD">
+    <button id="clearF">مسح الفلتر</button>
+  </div>
+  <div class="bar">
+    <button class="primary" id="exp">تصدير إكسيل</button>
+    <button id="bkExp">نسخة احتياطية</button>
+    <button id="bkImp">استيراد نسخة</button>
+    <input type="file" id="impFile" accept=".json,application/json" class="hidden">
   </div>
   <div id="trackView" class="wrap">
     <table><thead id="thT"></thead><tbody id="rows"></tbody></table>
@@ -64,8 +99,16 @@ textarea{width:100%;height:280px;font-size:15px;padding:8px;box-sizing:border-bo
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
     باقي البنود: رمادي = لم يسجل، تم / لم يتم / لا ينطبق.<br>
     حضور أو تأخير أو تحضير أو إلقاء = حضور. غياب أو لم يتم = غياب. لا ينطبق مش بتدخل في المجموع.<br>
-    المجاميع بتجمع كل الأسابيع. النسبة بتتحسب "المتحقق من المستحق" (مثلاً 2 من 2).
+    المجاميع بتجمع الأسابيع داخل الفلتر. الخانة الحمرا = الخادم ماعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
   </div>
+</div>
+
+<div id="report" class="hidden">
+  <div class="bar noprint">
+    <button id="backRep">رجوع</button>
+    <button class="primary" id="printRep">طباعة</button>
+  </div>
+  <div class="report" id="reportBody"></div>
 </div>
 
 <script>
@@ -75,21 +118,21 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
 
 const att = [
-  {t:"لم يسجل", c:"#bbb"},
+  {t:"لم يسجل", c:"#888"},
   {t:"حضور", c:"#2e9e5b", ok:1, due:1},
   {t:"تأخير", c:"#e0a100", ok:1, due:1},
   {t:"غياب", c:"#d64545", ok:0, due:1},
   {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
 ];
 const lesson = [
-  {t:"لم يسجل", c:"#bbb"},
+  {t:"لم يسجل", c:"#888"},
   {t:"تحضير", c:"#2e9e5b", ok:1, due:1},
   {t:"إلقاء", c:"#2e9e5b", ok:1, due:1},
   {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0},
   {t:"لم يتم", c:"#d64545", ok:0, due:1}
 ];
 const done = [
-  {t:"لم يسجل", c:"#bbb"},
+  {t:"لم يسجل", c:"#888"},
   {t:"تم", c:"#2e9e5b", ok:1, due:1},
   {t:"لم يتم", c:"#d64545", ok:0, due:1},
   {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
@@ -107,10 +150,12 @@ const items = [
   {k:"etiraf", l:"اعتراف", s:done},
   {k:"shamas", l:"شماس", s:done}
 ];
+const WARN_KEYS = [{k:"eftqad", l:"افتقاد"}, {k:"tasbeha", l:"تسبحة"}, {k:"tanawol", l:"تناول"}];
 
 let S = {servants:[], weeks:[]};
 let inSetup = false;
 let cur = 0;
+let fromD = "", toD = "";
 
 function blank(){ const o={tel:0, visit:0, note:""}; items.forEach(i=>o[i.k]=0); return o; }
 function rec(w, n){ if(!w.rec[n]) w.rec[n]=blank(); return w.rec[n]; }
@@ -123,10 +168,13 @@ function ensureState(){
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 function load(){ try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && Array.isArray(d.servants)) S = d; } catch(e) {} }
 
+function inRange(w){ return (!fromD || w.date >= fromD) && (!toD || w.date <= toD); }
+function rangeWeeks(){ return S.weeks.filter(inRange); }
+
 function totals(n){
   const t = {tel:0, visit:0, notes:0};
   items.forEach(i => t[i.k] = {ok:0, due:0});
-  S.weeks.forEach(w => {
+  rangeWeeks().forEach(w => {
     const r = rec(w, n);
     items.forEach(i => { const st = i.s[r[i.k]]; t[i.k].ok += st.ok; t[i.k].due += st.due; });
     t.tel += +r.tel || 0;
@@ -136,17 +184,43 @@ function totals(n){
   return t;
 }
 
+// items the servant has not done at all in the last 4 weeks
+function missing(n){
+  const last = S.weeks.slice(-4);
+  return WARN_KEYS.filter(x => !last.some(w => rec(w, n)[x.k] === 1)).map(x => x.l);
+}
+
 function showSetup(){
   inSetup = true;
   $("setup").classList.remove("hidden");
   $("main").classList.add("hidden");
+  $("report").classList.add("hidden");
   $("names").value = S.servants.join("\n");
   $("cancelSetup").classList.toggle("hidden", !S.servants.length);
 }
 function showMain(){
   inSetup = false;
   $("setup").classList.add("hidden");
+  $("report").classList.add("hidden");
   $("main").classList.remove("hidden");
+}
+function showReport(n){
+  const w = rangeWeeks();
+  const t = totals(n);
+  let rows = w.map(wk => {
+    const r = rec(wk, n);
+    return `<tr><td>${esc(wk.date)}</td>` + items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("") +
+      `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
+  }).join("");
+  const sumCells = items.map(i => `<td><b>${t[i.k].ok} من ${t[i.k].due}</b></td>`).join("");
+  const range = (fromD || toD) ? `من ${fromD || "البداية"} إلى ${toD || "النهاية"}` : "كل الأسابيع";
+  $("reportBody").innerHTML =
+    `<h2>تقرير: ${esc(n)}</h2><p style="font-size:13px;color:var(--muted)">${range}</p>` +
+    `<div class="wrap"><table><thead><tr><th>التاريخ</th>${items.map(i=>`<th>${i.l}</th>`).join("")}<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr></thead>` +
+    `<tbody>${rows}<tr><th>الإجمالي</th>${sumCells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr></tbody></table></div>`;
+  $("main").classList.add("hidden");
+  $("setup").classList.add("hidden");
+  $("report").classList.remove("hidden");
 }
 
 function render(){
@@ -155,7 +229,10 @@ function render(){
   const w = S.weeks[cur];
   $("wk").innerHTML = S.weeks.map((x,i)=>`<option value="${i}"${i===cur?" selected":""}>أسبوع ${i+1}</option>`).join("");
   $("wkDate").value = w.date;
-  const head = '<tr><th>اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
+  $("delSel").innerHTML = S.servants.map(n => `<option>${esc(n)}</option>`).join("");
+  $("fromD").value = fromD;
+  $("toD").value = toD;
+  const head = '<tr><th class="sticky">اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
     '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
   $("thT").innerHTML = head;
   $("thS").innerHTML = head;
@@ -165,20 +242,25 @@ function render(){
       const st = i.s[r[i.k]];
       return `<td><button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></td>`;
     }).join("");
-    return `<tr><td style="text-align:right">${esc(n)}</td>${cells}
+    return `<tr><td class="sticky" style="text-align:right">${esc(n)}</td>${cells}
       <td><input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></td>
       <td><input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></td>
-      <td><input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note" style="width:110px"></td></tr>`;
+      <td><input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note" style="width:120px"></td></tr>`;
   }).join("");
   $("sumRows").innerHTML = S.servants.map(n => {
     const t = totals(n);
+    const miss = missing(n);
     const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}</td>`).join("");
-    return `<tr><td style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
+    const nameCls = miss.length ? "sticky warn" : "sticky";
+    const title = miss.length ? ` title="لم يتم: ${esc(miss.join("، "))} في آخر 4 أسابيع"` : "";
+    return `<tr><td class="${nameCls} nm" data-n="${esc(n)}"${title} style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
   }).join("");
 }
 
 function changed(){ save(); render(); }
+function setStatus(t){ $("status").textContent = t; }
 
+/* ----- setup ----- */
 $("done").onclick = () => {
   const list = [...new Set($("names").value.split("\n").map(s=>s.trim()).filter(Boolean))];
   if (!list.length) { alert("اكتب اسم واحد على الأقل"); return; }
@@ -189,6 +271,7 @@ $("done").onclick = () => {
 $("cancelSetup").onclick = () => { showMain(); render(); };
 $("editNames").onclick = showSetup;
 
+/* ----- servants ----- */
 $("addSrv").onclick = () => {
   const name = $("newName").value.trim();
   if (!name) { alert("اكتب اسم الخادم"); return; }
@@ -198,7 +281,16 @@ $("addSrv").onclick = () => {
   $("newName").value = "";
   changed();
 };
+$("delBtn").onclick = () => {
+  const name = $("delSel").value;
+  if (!name) return;
+  if (!confirm(`هتحذف "${name}" وكل بياناته في كل الأسابيع. متأكد؟`)) return;
+  S.servants = S.servants.filter(n => n !== name);
+  S.weeks.forEach(w => { delete w.rec[name]; });
+  changed();
+};
 
+/* ----- tracking ----- */
 $("rows").onclick = e => {
   const b = e.target.closest("button[data-k]");
   if (!b) return;
@@ -221,6 +313,45 @@ $("addWk").onclick = () => { S.weeks.push({date: today(), rec: {}}); cur = S.wee
 $("tabTrack").onclick = () => { $("trackView").classList.remove("hidden"); $("sumView").classList.add("hidden"); };
 $("tabSum").onclick = () => { $("sumView").classList.remove("hidden"); $("trackView").classList.add("hidden"); };
 
+/* ----- date filter ----- */
+$("fromD").onchange = e => { fromD = e.target.value; render(); };
+$("toD").onchange = e => { toD = e.target.value; render(); };
+$("clearF").onclick = () => { fromD = ""; toD = ""; render(); };
+
+/* ----- report ----- */
+$("sumRows").onclick = e => {
+  const td = e.target.closest("td.nm");
+  if (td) showReport(td.dataset.n);
+};
+$("backRep").onclick = () => { showMain(); render(); };
+$("printRep").onclick = () => window.print();
+
+/* ----- backup / import ----- */
+$("bkExp").onclick = () => {
+  const blob = new Blob([JSON.stringify(S)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "متابعة_الخدام_نسخة.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("bkImp").onclick = () => $("impFile").click();
+$("impFile").onchange = e => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let d;
+    try { d = JSON.parse(reader.result); } catch(err) { alert("الملف ده مش نسخة احتياطية صالحة"); return; }
+    if (!d || !Array.isArray(d.servants) || !Array.isArray(d.weeks)) { alert("الملف ده مش نسخة احتياطية صالحة"); return; }
+    if (!confirm("هيتم استبدال كل البيانات الحالية بالنسخة دي. متأكد؟")) return;
+    S = d; cur = 0; ensureState(); changed(); showMain();
+  };
+  reader.readAsText(f);
+};
+
+/* ----- excel ----- */
 $("exp").onclick = () => {
   const track = [];
   S.weeks.forEach((w, wi) => S.servants.forEach(n => {
@@ -243,9 +374,11 @@ $("exp").onclick = () => {
   XLSX.writeFile(wb, "متابعة_الخدام.xlsx");
 };
 
+/* ----- start ----- */
 load();
 ensureState();
 if (S.servants.length) { showMain(); render(); } else { showSetup(); }
+setStatus("محفوظ على هذا الجهاز");
 </script>
 </body>
 </html>
