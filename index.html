@@ -97,7 +97,7 @@ textarea{width:100%;height:280px;padding:8px}
   <div class="legend">
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
-    باقي البنود: رمادي = لم يسجل، تم / لم يتم / لا ينطبق.<br>
+    الحضور والدرس وصلاة واجتماع ويوم روحي وشماس: لو اخترت لا ينطبق لخادم، بتتطبق على كل الخدام في الأسبوع. افتقاد وتسبحة وتناول واعتراف: رمادي، تم، لم يتم.<br>
     حضور أو تأخير أو تحضير أو إلقاء = حضور. غياب أو لم يتم = غياب. لا ينطبق مش بتدخل في المجموع.<br>
     المجاميع بتجمع الأسابيع داخل الفلتر. الخانة الحمرا = الخادم ماعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
   </div>
@@ -127,7 +127,7 @@ const att = [
 const lesson = [
   {t:"لم يسجل", c:"#888"},
   {t:"تحضير", c:"#2e9e5b", ok:1, due:1},
-  {t:"إلقاء", c:"#2e9e5b", ok:1, due:1},
+  {t:"إلقاء", c:"#800020", ok:1, due:1},
   {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0},
   {t:"لم يتم", c:"#d64545", ok:0, due:1}
 ];
@@ -137,6 +137,12 @@ const done = [
   {t:"لم يتم", c:"#d64545", ok:0, due:1},
   {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
 ];
+const done3 = [
+  {t:"لم يسجل", c:"#888"},
+  {t:"تم", c:"#2e9e5b", ok:1, due:1},
+  {t:"لم يتم", c:"#d64545", ok:0, due:1}
+];
+const NA_KEYS = ["att","lesson","salat","ejtema","rmk","rkh","shamas"];
 const items = [
   {k:"att", l:"الحضور", s:att},
   {k:"lesson", l:"الدرس", s:lesson},
@@ -144,10 +150,10 @@ const items = [
   {k:"ejtema", l:"اجتماع", s:done},
   {k:"rmk", l:"يوم روحي مخدومين", s:done},
   {k:"rkh", l:"يوم روحي خدام", s:done},
-  {k:"eftqad", l:"افتقاد", s:done},
-  {k:"tasbeha", l:"تسبحة", s:done},
-  {k:"tanawol", l:"تناول", s:done},
-  {k:"etiraf", l:"اعتراف", s:done},
+  {k:"eftqad", l:"افتقاد", s:done3},
+  {k:"tasbeha", l:"تسبحة", s:done3},
+  {k:"tanawol", l:"تناول", s:done3},
+  {k:"etiraf", l:"اعتراف", s:done3},
   {k:"shamas", l:"شماس", s:done}
 ];
 const WARN_KEYS = [{k:"eftqad", l:"افتقاد"}, {k:"tasbeha", l:"تسبحة"}, {k:"tanawol", l:"تناول"}];
@@ -234,7 +240,11 @@ function render(){
   $("toD").value = toD;
   const head = '<tr><th class="sticky">اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
     '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
-  $("thT").innerHTML = head;
+  const allRow = '<tr><th class="sticky">للكل</th>' +
+    items.map(i => `<th><select data-all="${i.k}" style="font-size:12px;padding:2px"><option value="">—</option>` +
+      i.s.map((s,idx) => `<option value="${idx}">${s.t}</option>`).join("") + `</select></th>`).join("") +
+    '<th></th><th></th><th></th></tr>';
+  $("thT").innerHTML = head + allRow;
   $("thS").innerHTML = head;
   $("rows").innerHTML = S.servants.map(n => {
     const r = rec(w, n);
@@ -294,9 +304,13 @@ $("delBtn").onclick = () => {
 $("rows").onclick = e => {
   const b = e.target.closest("button[data-k]");
   if (!b) return;
-  const r = rec(S.weeks[cur], b.dataset.n);
+  const w = S.weeks[cur];
+  const r = rec(w, b.dataset.n);
   const it = items.find(i => i.k === b.dataset.k);
   r[it.k] = (r[it.k] + 1) % it.s.length;
+  if (NA_KEYS.includes(it.k) && it.s[r[it.k]].t === "لا ينطبق") {
+    S.servants.forEach(n => { rec(w, n)[it.k] = r[it.k]; });
+  }
   changed();
 };
 $("rows").onchange = e => {
@@ -307,6 +321,14 @@ $("rows").onchange = e => {
   changed();
 };
 
+$("thT").onchange = e => {
+  const k = e.target.dataset && e.target.dataset.all;
+  if (!k || e.target.value === "") return;
+  const idx = +e.target.value;
+  const w = S.weeks[cur];
+  S.servants.forEach(n => { rec(w, n)[k] = idx; });
+  changed();
+};
 $("wk").onchange = e => { cur = +e.target.value; render(); };
 $("wkDate").onchange = e => { S.weeks[cur].date = e.target.value; changed(); };
 $("addWk").onclick = () => { S.weeks.push({date: today(), rec: {}}); cur = S.weeks.length - 1; ensureState(); changed(); };
