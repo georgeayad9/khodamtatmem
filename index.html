@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d6f42">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="متابعة الخدام">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>متابعة الخدام</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:12px;background:#fafafa;color:#222}
+h2{margin:6px 0 10px}
+button{cursor:pointer;border-radius:6px;border:1px solid #bbb;background:#fff;padding:6px 12px;font-size:13px}
+button.primary{background:#1d6f42;color:#fff;border-color:#1d6f42}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bar select,.bar input{padding:5px;border:1px solid #bbb;border-radius:6px;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:12px;text-align:center;background:#fff}
+th,td{border:1px solid #ddd;padding:4px}
+th{background:#f2f2f2}
+.st{width:80px;padding:5px 2px;border:none;border-radius:6px;color:#fff;font-size:11px}
+input[type=number]{width:46px;padding:3px}
+textarea{width:100%;height:280px;font-size:15px;padding:8px;box-sizing:border-box;border:1px solid #bbb;border-radius:6px}
+.wrap{overflow-x:auto}
+.hidden{display:none !important}
+.legend{font-size:12px;color:#555;line-height:1.9;margin-top:12px}
+.status{font-size:12px;color:#777;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<div id="setup" class="hidden">
+  <h2>إضافة الخدام</h2>
+  <p style="font-size:13px;color:#555">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
+  <textarea id="names"></textarea>
+  <div class="bar" style="margin-top:8px">
+    <button class="primary" id="done">Done</button>
+    <button id="cancelSetup">رجوع</button>
+  </div>
+</div>
+
+<div id="main" class="hidden">
+  <div class="status" id="status">محفوظ على هذا الجهاز</div>
+  <div class="bar">
+    <button id="editNames">تعديل الخدام</button>
+    <input id="newName" placeholder="خادم جديد">
+    <button id="addSrv">إضافة خادم</button>
+    <select id="wk"></select>
+    <input type="date" id="wkDate">
+    <button id="addWk">أسبوع جديد</button>
+    <button id="tabTrack">المتابعة</button>
+    <button id="tabSum">المجاميع</button>
+    <button class="primary" id="exp" style="margin-inline-start:auto">تصدير إكسيل</button>
+  </div>
+  <div id="trackView" class="wrap">
+    <table><thead id="thT"></thead><tbody id="rows"></tbody></table>
+  </div>
+  <div id="sumView" class="wrap hidden">
+    <table><thead id="thS"></thead><tbody id="sumRows"></tbody></table>
+  </div>
+  <div class="legend">
+    الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
+    الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
+    باقي البنود: رمادي = لم يسجل، تم / لم يتم / لا ينطبق.<br>
+    حضور أو تأخير أو تحضير أو إلقاء = حضور. غياب أو لم يتم = غياب. لا ينطبق مش بتدخل في المجموع.<br>
+    المجاميع بتجمع كل الأسابيع. النسبة بتتحسب "المتحقق من المستحق" (مثلاً 2 من 2).
+  </div>
+</div>
+
+<script>
+const KEY = "tatbeeq_v1";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+
+const att = [
+  {t:"لم يسجل", c:"#bbb"},
+  {t:"حضور", c:"#2e9e5b", ok:1, due:1},
+  {t:"تأخير", c:"#e0a100", ok:1, due:1},
+  {t:"غياب", c:"#d64545", ok:0, due:1},
+  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
+];
+const lesson = [
+  {t:"لم يسجل", c:"#bbb"},
+  {t:"تحضير", c:"#2e9e5b", ok:1, due:1},
+  {t:"إلقاء", c:"#2e9e5b", ok:1, due:1},
+  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0},
+  {t:"لم يتم", c:"#d64545", ok:0, due:1}
+];
+const done = [
+  {t:"لم يسجل", c:"#bbb"},
+  {t:"تم", c:"#2e9e5b", ok:1, due:1},
+  {t:"لم يتم", c:"#d64545", ok:0, due:1},
+  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
+];
+const items = [
+  {k:"att", l:"الحضور", s:att},
+  {k:"lesson", l:"الدرس", s:lesson},
+  {k:"salat", l:"صلاة", s:done},
+  {k:"ejtema", l:"اجتماع", s:done},
+  {k:"rmk", l:"يوم روحي مخدومين", s:done},
+  {k:"rkh", l:"يوم روحي خدام", s:done},
+  {k:"eftqad", l:"افتقاد", s:done},
+  {k:"tasbeha", l:"تسبحة", s:done},
+  {k:"tanawol", l:"تناول", s:done},
+  {k:"etiraf", l:"اعتراف", s:done},
+  {k:"shamas", l:"شماس", s:done}
+];
+
+let S = {servants:[], weeks:[]};
+let inSetup = false;
+let cur = 0;
+
+function blank(){ const o={tel:0, visit:0, note:""}; items.forEach(i=>o[i.k]=0); return o; }
+function rec(w, n){ if(!w.rec[n]) w.rec[n]=blank(); return w.rec[n]; }
+function ensureState(){
+  if (!Array.isArray(S.servants)) S.servants = [];
+  if (!Array.isArray(S.weeks)) S.weeks = [];
+  if (!S.weeks.length) S.weeks.push({date: today(), rec: {}});
+  S.weeks.forEach(w => { if(!w.rec) w.rec = {}; S.servants.forEach(n => rec(w, n)); });
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+function load(){ try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && Array.isArray(d.servants)) S = d; } catch(e) {} }
+
+function totals(n){
+  const t = {tel:0, visit:0, notes:0};
+  items.forEach(i => t[i.k] = {ok:0, due:0});
+  S.weeks.forEach(w => {
+    const r = rec(w, n);
+    items.forEach(i => { const st = i.s[r[i.k]]; t[i.k].ok += st.ok; t[i.k].due += st.due; });
+    t.tel += +r.tel || 0;
+    t.visit += +r.visit || 0;
+    if (r.note) t.notes++;
+  });
+  return t;
+}
+
+function showSetup(){
+  inSetup = true;
+  $("setup").classList.remove("hidden");
+  $("main").classList.add("hidden");
+  $("names").value = S.servants.join("\n");
+  $("cancelSetup").classList.toggle("hidden", !S.servants.length);
+}
+function showMain(){
+  inSetup = false;
+  $("setup").classList.add("hidden");
+  $("main").classList.remove("hidden");
+}
+
+function render(){
+  ensureState();
+  if (cur >= S.weeks.length) cur = S.weeks.length - 1;
+  const w = S.weeks[cur];
+  $("wk").innerHTML = S.weeks.map((x,i)=>`<option value="${i}"${i===cur?" selected":""}>أسبوع ${i+1}</option>`).join("");
+  $("wkDate").value = w.date;
+  const head = '<tr><th>اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
+    '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
+  $("thT").innerHTML = head;
+  $("thS").innerHTML = head;
+  $("rows").innerHTML = S.servants.map(n => {
+    const r = rec(w, n);
+    const cells = items.map(i => {
+      const st = i.s[r[i.k]];
+      return `<td><button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></td>`;
+    }).join("");
+    return `<tr><td style="text-align:right">${esc(n)}</td>${cells}
+      <td><input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></td>
+      <td><input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></td>
+      <td><input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note" style="width:110px"></td></tr>`;
+  }).join("");
+  $("sumRows").innerHTML = S.servants.map(n => {
+    const t = totals(n);
+    const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}</td>`).join("");
+    return `<tr><td style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
+  }).join("");
+}
+
+function changed(){ save(); render(); }
+
+$("done").onclick = () => {
+  const list = [...new Set($("names").value.split("\n").map(s=>s.trim()).filter(Boolean))];
+  if (!list.length) { alert("اكتب اسم واحد على الأقل"); return; }
+  S.servants = list;
+  ensureState();
+  save(); showMain(); render();
+};
+$("cancelSetup").onclick = () => { showMain(); render(); };
+$("editNames").onclick = showSetup;
+
+$("addSrv").onclick = () => {
+  const name = $("newName").value.trim();
+  if (!name) { alert("اكتب اسم الخادم"); return; }
+  if (S.servants.includes(name)) { alert("الخادم ده موجود بالفعل"); return; }
+  S.servants.push(name);
+  S.weeks.forEach(w => rec(w, name));
+  $("newName").value = "";
+  changed();
+};
+
+$("rows").onclick = e => {
+  const b = e.target.closest("button[data-k]");
+  if (!b) return;
+  const r = rec(S.weeks[cur], b.dataset.n);
+  const it = items.find(i => i.k === b.dataset.k);
+  r[it.k] = (r[it.k] + 1) % it.s.length;
+  changed();
+};
+$("rows").onchange = e => {
+  const inp = e.target;
+  if (!inp.dataset.k) return;
+  const r = rec(S.weeks[cur], inp.dataset.n);
+  r[inp.dataset.k] = inp.dataset.k === "note" ? inp.value : (+inp.value || 0);
+  changed();
+};
+
+$("wk").onchange = e => { cur = +e.target.value; render(); };
+$("wkDate").onchange = e => { S.weeks[cur].date = e.target.value; changed(); };
+$("addWk").onclick = () => { S.weeks.push({date: today(), rec: {}}); cur = S.weeks.length - 1; ensureState(); changed(); };
+$("tabTrack").onclick = () => { $("trackView").classList.remove("hidden"); $("sumView").classList.add("hidden"); };
+$("tabSum").onclick = () => { $("sumView").classList.remove("hidden"); $("trackView").classList.add("hidden"); };
+
+$("exp").onclick = () => {
+  const track = [];
+  S.weeks.forEach((w, wi) => S.servants.forEach(n => {
+    const r = rec(w, n);
+    const o = {"الأسبوع": wi+1, "التاريخ": w.date, "اسم الخادم": n};
+    items.forEach(i => o[i.l] = i.s[r[i.k]].t);
+    o["تليفون"] = r.tel; o["زيارة"] = r.visit; o["ملاحظات"] = r.note;
+    track.push(o);
+  }));
+  const sum = S.servants.map(n => {
+    const t = totals(n);
+    const o = {"اسم الخادم": n};
+    items.forEach(i => o[i.l] = t[i.k].ok + " من " + t[i.k].due);
+    o["تليفون"] = t.tel; o["زيارة"] = t.visit; o["ملاحظات"] = t.notes;
+    return o;
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(track), "المتابعة");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sum), "المجاميع");
+  XLSX.writeFile(wb, "متابعة_الخدام.xlsx");
+};
+
+load();
+ensureState();
+if (S.servants.length) { showMain(); render(); } else { showSetup(); }
+</script>
+</body>
+</html>
