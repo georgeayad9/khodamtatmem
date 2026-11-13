@@ -152,6 +152,7 @@ textarea{width:100%;height:280px;padding:8px}
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
     لو الحضور = غياب، الصلاة والدرس والاجتماع بتتحول لم يتم تلقائي. لو التناول = لم يتم، الشماس بيتحول لم يتم تلقائي.<br>
+    عشية: تم أو لم يتم بس.<br>
     لا ينطبق مش بتدخل في المجموع. المجاميع بتجمع الأسابيع داخل الفلتر. "ناقص" = ما اتعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
   </div>
 </div>
@@ -216,7 +217,8 @@ const items = [
   {k:"tasbeha", l:"تسبحة", s:done3},
   {k:"tanawol", l:"تناول", s:done3},
   {k:"etiraf", l:"اعتراف", s:done3},
-  {k:"shamas", l:"شماس", s:done}
+  {k:"shamas", l:"شماس", s:done},
+  {k:"ashiya", l:"عشية", s:done3}
 ];
 const WARN_KEYS = [{k:"eftqad", l:"افتقاد"}, {k:"tasbeha", l:"تسبحة"}, {k:"tanawol", l:"تناول"}];
 
@@ -249,7 +251,13 @@ function ensureState(){
   if (!Array.isArray(S.weeks)) S.weeks = [];
   if (!S.weeks.length) S.weeks.push({date: today(), rec: {}});
   S.weeks.sort(byDate);
-  S.weeks.forEach(w => { if(!w.rec) w.rec = {}; S.servants.forEach(n => rec(w, n)); });
+  S.weeks.forEach(w => {
+    if (!w.rec) w.rec = {};
+    S.servants.forEach(n => {
+      const r = rec(w, n);
+      items.forEach(i => { if (r[i.k] === undefined) r[i.k] = 0; });
+    });
+  });
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 function load(){ try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && Array.isArray(d.servants)) S = d; } catch(e) {} }
