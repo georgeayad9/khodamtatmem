@@ -17,37 +17,60 @@
   :root{--bg:#1c1c1e;--card:#2c2c2e;--text:#eee;--muted:#aaa;--border:#555;--btnb:#666;--head:#3a3a3c;--green:#2e9e5b;--warn:#5a2222;--warnt:#ffb3b3}
 }
 *{box-sizing:border-box}
-input,select,textarea{font-size:16px;background:var(--card);color:var(--text);border:1px solid var(--btnb);border-radius:6px;padding:5px}
+input,select,textarea{font-size:16px;background:var(--card);color:var(--text);border:1px solid var(--btnb);border-radius:6px;padding:6px}
 body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:12px;background:var(--bg);color:var(--text)}
 h2{margin:6px 0 10px}
-button{cursor:pointer;border-radius:6px;border:1px solid var(--btnb);background:var(--card);color:var(--text);padding:6px 12px;font-size:13px}
+button{cursor:pointer;border-radius:6px;border:1px solid var(--btnb);background:var(--card);color:var(--text);padding:7px 12px;font-size:14px}
+button.on{background:var(--green);color:#fff;border-color:var(--green)}
 button.primary{background:var(--green);color:#fff;border-color:var(--green)}
 button.danger{background:#d64545;color:#fff;border-color:#d64545}
-.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.muted{font-size:13px;color:var(--muted)}
+.hidden{display:none !important}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding-bottom:8px}
+.weekNav{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px}
+.weekNav .title{text-align:center}
+.weekNav .title b{display:block;font-size:17px;font-weight:500}
+.weekNav input[type=date]{font-size:13px;padding:3px}
+.status{font-size:12px;color:var(--muted);margin:6px 0}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
+.panel .bar button{flex:1 1 auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px}
+.card .nm{font-size:17px;font-weight:500;text-decoration:none;display:block;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cell .lab{font-size:12px;color:var(--muted);margin-bottom:3px}
+.cell .st{width:100%}
+.st{padding:9px 4px;border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer}
+.extra{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.extra .wide{grid-column:1/-1}
+.extra label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.extra input{width:100%}
+.miss{font-size:12px;color:var(--warnt);background:var(--warn);border-radius:6px;padding:6px 8px;margin-top:10px}
+.unrec{font-size:12px;color:var(--muted);margin-top:8px}
 table{border-collapse:collapse;width:100%;font-size:12px;text-align:center;background:var(--card)}
 th,td{border:1px solid var(--border);padding:4px}
 th{background:var(--head)}
 td.sticky,th.sticky{position:sticky;right:0;z-index:1;background:var(--card)}
 th.sticky{background:var(--head)}
-td.warn{background:var(--warn);color:var(--warnt);cursor:pointer}
+td.warn{background:var(--warn);color:var(--warnt)}
 .nm{cursor:pointer;text-decoration:underline}
-.st{width:80px;padding:5px 2px;border:none;border-radius:6px;color:#fff;font-size:11px}
-input[type=number]{width:56px;padding:3px}
+.tbl-st{width:84px;padding:6px 2px;border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer}
+input[type=number]{width:60px;padding:4px}
 textarea{width:100%;height:280px;padding:8px}
 .wrap{overflow-x:auto}
-.hidden{display:none !important}
 .legend{font-size:12px;color:var(--muted);line-height:1.9;margin-top:12px}
-.status{font-size:12px;color:var(--muted);margin-bottom:8px}
-.report{background:var(--card);padding:12px;border-radius:10px}
-@media (max-width:600px){
-  .st{width:92px;padding:9px 4px;font-size:12px}
-  button{padding:9px 12px}
-  td,th{padding:6px 4px}
+.report{background:var(--card);padding:12px;border-radius:12px}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none}
+#printArea{display:none}
+@media (min-width:700px){
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media print{
-  #main,#setup,#report .noprint{display:none !important}
-  #report{display:block !important}
+  body > *:not(#printArea){display:none !important}
+  #printArea{display:block !important}
   body{background:#fff;color:#000}
+  #printArea table{font-size:10px}
+  #printArea th,#printArea td{border:1px solid #000;color:#000}
 }
 </style>
 </head>
@@ -55,7 +78,7 @@ textarea{width:100%;height:280px;padding:8px}
 
 <div id="setup" class="hidden">
   <h2>إضافة الخدام</h2>
-  <p style="font-size:13px;color:var(--muted)">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
+  <p class="muted">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
   <textarea id="names"></textarea>
   <div class="bar" style="margin-top:8px">
     <button class="primary" id="done">Done</button>
@@ -64,60 +87,98 @@ textarea{width:100%;height:280px;padding:8px}
 </div>
 
 <div id="main" class="hidden">
-  <div class="status" id="status">محفوظ على هذا الجهاز</div>
-  <div class="bar">
-    <button id="editNames">تعديل الخدام</button>
-    <input id="newName" placeholder="خادم جديد">
-    <button id="addSrv">إضافة خادم</button>
-    <select id="delSel"></select>
-    <button class="danger" id="delBtn">حذف الخادم</button>
-  </div>
-  <div class="bar">
-    <select id="wk"></select>
-    <input type="date" id="wkDate">
-    <button id="addWk">أسبوع جديد</button>
-    <button id="tabTrack">المتابعة</button>
-    <button id="tabSum">المجاميع</button>
-  </div>
-  <div class="bar">
-    <label>من</label><input type="date" id="fromD">
-    <label>إلى</label><input type="date" id="toD">
-    <button id="clearF">مسح الفلتر</button>
-  </div>
-  <div class="bar">
-    <button class="primary" id="exp">تصدير إكسيل</button>
-    <button id="bkExp">نسخة احتياطية</button>
-    <button id="bkImp">استيراد نسخة</button>
-    <input type="file" id="impFile" accept=".json,application/json" class="hidden">
-  </div>
-  <div id="trackView" class="wrap">
+  <header class="top">
+    <div class="weekNav">
+      <button id="nextWk">التالي</button>
+      <div class="title">
+        <b id="wkName"></b>
+        <input type="date" id="wkDate">
+      </div>
+      <button id="prevWk">السابق</button>
+    </div>
+    <div class="bar" style="justify-content:space-between">
+      <span class="muted" id="count"></span>
+      <input id="search" placeholder="ابحث باسم الخادم" style="flex:1;min-width:120px;max-width:220px">
+    </div>
+    <div class="bar" style="margin-top:8px">
+      <button id="vCards">كروت</button>
+      <button id="vTable">جدول كامل</button>
+      <button id="vSum">المجاميع</button>
+      <button id="menuBtn" style="margin-inline-start:auto">⋯ المزيد</button>
+    </div>
+    <div class="status" id="status">محفوظ على هذا الجهاز</div>
+    <div id="menu" class="panel hidden">
+      <div class="bar">
+        <button id="editNames">تعديل الخدام</button>
+        <button id="printWk">طباعة الأسبوع</button>
+        <button class="primary" id="exp">تصدير إكسيل</button>
+      </div>
+      <div class="bar">
+        <input id="newName" placeholder="خادم جديد">
+        <button id="addSrv">إضافة خادم</button>
+      </div>
+      <div class="bar">
+        <select id="delSel"></select>
+        <button class="danger" id="delBtn">حذف الخادم</button>
+      </div>
+      <div class="bar">
+        <button id="addWk">أسبوع جديد</button>
+        <button class="danger" id="delWk">حذف الأسبوع الحالي</button>
+      </div>
+      <div class="bar">
+        <label class="muted">من</label><input type="date" id="fromD">
+        <label class="muted">إلى</label><input type="date" id="toD">
+        <button id="clearF">مسح الفلتر</button>
+      </div>
+      <div class="bar">
+        <button id="bkExp">نسخة احتياطية</button>
+        <button id="bkImp">استيراد نسخة</button>
+        <input type="file" id="impFile" accept=".json,application/json" class="hidden">
+      </div>
+    </div>
+  </header>
+
+  <div id="cardsView"></div>
+
+  <div id="tableView" class="wrap hidden">
     <table><thead id="thT"></thead><tbody id="rows"></tbody></table>
   </div>
+
   <div id="sumView" class="wrap hidden">
     <table><thead id="thS"></thead><tbody id="sumRows"></tbody></table>
   </div>
+
   <div class="legend">
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
-    لو الحضور = غياب، الصلاة والدرس والاجتماع بتتحول لم يتم تلقائي. لو التناول = لم يتم، الشماس بيتحول لم يتم تلقائي. زرار "للكل" فوق بيطبق الاختيار على كل الخدام.<br>
-    حضور أو تأخير أو تحضير أو إلقاء = حضور. غياب أو لم يتم = غياب. لا ينطبق مش بتدخل في المجموع.<br>
-    المجاميع بتجمع الأسابيع داخل الفلتر. الخانة الحمرا = الخادم ماعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
+    لو الحضور = غياب، الصلاة والدرس والاجتماع بتتحول لم يتم تلقائي. لو التناول = لم يتم، الشماس بيتحول لم يتم تلقائي.<br>
+    لا ينطبق مش بتدخل في المجموع. المجاميع بتجمع الأسابيع داخل الفلتر. "ناقص" = ما اتعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
   </div>
 </div>
 
 <div id="report" class="hidden">
-  <div class="bar noprint">
+  <div class="bar" style="margin-bottom:10px">
     <button id="backRep">رجوع</button>
     <button class="primary" id="printRep">طباعة</button>
   </div>
   <div class="report" id="reportBody"></div>
 </div>
 
+<div id="printArea"></div>
+<div id="toast"></div>
+
 <script>
 const KEY = "tatbeeq_v1";
+const VIEWKEY = "tatbeeq_view";
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function addDays(iso, n){
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+const byDate = (a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
 
 const att = [
   {t:"لم يسجل", c:"#888"},
@@ -144,7 +205,6 @@ const done3 = [
   {t:"تم", c:"#2e9e5b", ok:1, due:1},
   {t:"لم يتم", c:"#d64545", ok:0, due:1}
 ];
-const NA_KEYS = ["att","lesson","salat","ejtema","rmk","rkh","shamas"];
 const items = [
   {k:"att", l:"الحضور", s:att},
   {k:"lesson", l:"الدرس", s:lesson},
@@ -164,11 +224,14 @@ let S = {servants:[], weeks:[]};
 let inSetup = false;
 let cur = 0;
 let fromD = "", toD = "";
+let view = "cards";
 
+/* ---------- data helpers ---------- */
 function blank(){ const o={tel:0, visit:0, note:""}; items.forEach(i=>o[i.k]=0); return o; }
 function rec(w, n){ if(!w.rec[n]) w.rec[n]=blank(); return w.rec[n]; }
 function idxOf(key, label){ return items.find(i => i.k === key).s.findIndex(s => s.t === label); }
-// automatic changes that follow from one choice, for the same servant and week
+
+// automatic changes that follow from one choice, same servant and week
 function cascade(w, n, key, value){
   const r = rec(w, n);
   const label = items.find(i => i.k === key).s[value].t;
@@ -185,6 +248,7 @@ function ensureState(){
   if (!Array.isArray(S.servants)) S.servants = [];
   if (!Array.isArray(S.weeks)) S.weeks = [];
   if (!S.weeks.length) S.weeks.push({date: today(), rec: {}});
+  S.weeks.sort(byDate);
   S.weeks.forEach(w => { if(!w.rec) w.rec = {}; S.servants.forEach(n => rec(w, n)); });
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
@@ -205,11 +269,39 @@ function totals(n){
   });
   return t;
 }
-
-// items the servant has not done at all in the last 4 weeks
+// WARN items the servant has not done at all in the last 4 weeks
 function missing(n){
   const last = S.weeks.slice(-4);
   return WARN_KEYS.filter(x => !last.some(w => rec(w, n)[x.k] === 1)).map(x => x.l);
+}
+// items still at "لم يسجل" in this week
+function unrecorded(w, n){
+  const r = rec(w, n);
+  return items.filter(i => r[i.k] === 0).map(i => i.l);
+}
+function recorded(w, n){
+  const r = rec(w, n);
+  return items.some(i => r[i.k] !== 0);
+}
+
+/* ---------- ui helpers ---------- */
+let flashT = null;
+function setStatus(t){ $("status").textContent = t; }
+function flash(){
+  setStatus("تم الحفظ ✓");
+  clearTimeout(flashT);
+  flashT = setTimeout(() => setStatus("محفوظ على هذا الجهاز"), 1500);
+}
+function changed(){ save(); render(); flash(); }
+function closeMenu(){ $("menu").classList.add("hidden"); }
+function setView(v){
+  view = v;
+  try { localStorage.setItem(VIEWKEY, v); } catch(e) {}
+  render();
+}
+function defaultView(){
+  try { return localStorage.getItem(VIEWKEY) || (matchMedia("(min-width:700px)").matches ? "table" : "cards"); }
+  catch(e) { return "cards"; }
 }
 
 function showSetup(){
@@ -229,7 +321,7 @@ function showMain(){
 function showReport(n){
   const w = rangeWeeks();
   const t = totals(n);
-  let rows = w.map(wk => {
+  const rows = w.map(wk => {
     const r = rec(wk, n);
     return `<tr><td>${esc(wk.date)}</td>` + items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("") +
       `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
@@ -237,7 +329,7 @@ function showReport(n){
   const sumCells = items.map(i => `<td><b>${t[i.k].ok} من ${t[i.k].due}</b></td>`).join("");
   const range = (fromD || toD) ? `من ${fromD || "البداية"} إلى ${toD || "النهاية"}` : "كل الأسابيع";
   $("reportBody").innerHTML =
-    `<h2>تقرير: ${esc(n)}</h2><p style="font-size:13px;color:var(--muted)">${range}</p>` +
+    `<h2>تقرير: ${esc(n)}</h2><p class="muted">${range}</p>` +
     `<div class="wrap"><table><thead><tr><th>التاريخ</th>${items.map(i=>`<th>${i.l}</th>`).join("")}<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr></thead>` +
     `<tbody>${rows}<tr><th>الإجمالي</th>${sumCells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr></tbody></table></div>`;
   $("main").classList.add("hidden");
@@ -245,15 +337,60 @@ function showReport(n){
   $("report").classList.remove("hidden");
 }
 
+/* ---------- render ---------- */
 function render(){
   ensureState();
   if (cur >= S.weeks.length) cur = S.weeks.length - 1;
+  if (cur < 0) cur = 0;
   const w = S.weeks[cur];
-  $("wk").innerHTML = S.weeks.map((x,i)=>`<option value="${i}"${i===cur?" selected":""}>أسبوع ${i+1}</option>`).join("");
+  const q = $("search").value.trim();
+  const list = S.servants.filter(n => !q || n.includes(q));
+
+  $("wkName").textContent = `الأسبوع ${cur+1}`;
   $("wkDate").value = w.date;
-  $("delSel").innerHTML = S.servants.map(n => `<option>${esc(n)}</option>`).join("");
+  const recCount = S.servants.filter(n => recorded(w, n)).length;
+  $("count").textContent = `مسجّل: ${recCount} من ${S.servants.length}`;
   $("fromD").value = fromD;
   $("toD").value = toD;
+  $("delSel").innerHTML = S.servants.map(n => `<option>${esc(n)}</option>`).join("");
+
+  ["vCards","vTable","vSum"].forEach(id => $(id).classList.remove("on"));
+  $({cards:"vCards", table:"vTable", sum:"vSum"}[view]).classList.add("on");
+  $("cardsView").classList.toggle("hidden", view !== "cards");
+  $("tableView").classList.toggle("hidden", view !== "table");
+  $("sumView").classList.toggle("hidden", view !== "sum");
+
+  if (view === "cards") renderCards(w, list);
+  if (view === "table") renderTable(w, list);
+  if (view === "sum") renderSum(list);
+}
+
+function renderCards(w, list){
+  if (!list.length) { $("cardsView").innerHTML = '<p class="muted">ما فيش خدام بالاسم ده.</p>'; return; }
+  $("cardsView").innerHTML = list.map(n => {
+    const r = rec(w, n);
+    const miss = missing(n);
+    const un = unrecorded(w, n);
+    const cells = items.map(i => {
+      const st = i.s[r[i.k]];
+      return `<div class="cell"><div class="lab">${i.l}</div>` +
+        `<button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></div>`;
+    }).join("");
+    return `<div class="card">
+      <span class="nm" data-n="${esc(n)}">${esc(n)}</span>
+      <div class="grid">${cells}</div>
+      <div class="extra">
+        <label>تليفون<input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></label>
+        <label>زيارة<input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></label>
+        <label class="wide">ملاحظات<input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note"></label>
+      </div>
+      ${miss.length ? `<div class="miss">ناقص (آخر 4 أسابيع): ${esc(miss.join("، "))}</div>` : ""}
+      ${un.length ? `<div class="unrec">لم يسجل في الأسبوع ده: ${esc(un.join("، "))}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function renderTable(w, list){
   const head = '<tr><th class="sticky">اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
     '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
   const allRow = '<tr><th class="sticky">للكل</th>' +
@@ -261,43 +398,80 @@ function render(){
       i.s.map((s,idx) => `<option value="${idx}">${s.t}</option>`).join("") + `</select></th>`).join("") +
     '<th></th><th></th><th></th></tr>';
   $("thT").innerHTML = head + allRow;
-  $("thS").innerHTML = head;
-  $("rows").innerHTML = S.servants.map(n => {
+  $("rows").innerHTML = list.map(n => {
     const r = rec(w, n);
     const cells = items.map(i => {
       const st = i.s[r[i.k]];
-      return `<td><button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></td>`;
+      return `<td><button class="tbl-st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></td>`;
     }).join("");
-    return `<tr><td class="sticky" style="text-align:right">${esc(n)}</td>${cells}
+    return `<tr><td class="sticky nm" data-n="${esc(n)}" style="text-align:right">${esc(n)}</td>${cells}
       <td><input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></td>
       <td><input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></td>
       <td><input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note" style="width:120px"></td></tr>`;
   }).join("");
-  $("sumRows").innerHTML = S.servants.map(n => {
+}
+
+function renderSum(list){
+  $("thS").innerHTML = '<tr><th class="sticky">اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
+    '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
+  $("sumRows").innerHTML = list.map(n => {
     const t = totals(n);
     const miss = missing(n);
     const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}</td>`).join("");
-    const nameCls = miss.length ? "sticky warn" : "sticky";
-    const title = miss.length ? ` title="لم يتم: ${esc(miss.join("، "))} في آخر 4 أسابيع"` : "";
-    return `<tr><td class="${nameCls} nm" data-n="${esc(n)}"${title} style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
+    const nameCls = miss.length ? "sticky nm warn" : "sticky nm";
+    const title = miss.length ? ` title="ناقص: ${esc(miss.join("، "))}"` : "";
+    return `<tr><td class="${nameCls}" data-n="${esc(n)}"${title} style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
   }).join("");
 }
 
-function changed(){ save(); render(); }
-function setStatus(t){ $("status").textContent = t; }
+/* ---------- taps and changes (delegated) ---------- */
+function tapState(n, k){
+  const w = S.weeks[cur];
+  const r = rec(w, n);
+  const it = items.find(i => i.k === k);
+  r[k] = (r[k] + 1) % it.s.length;
+  cascade(w, n, k, r[k]);
+  changed();
+}
 
-/* ----- setup ----- */
+document.addEventListener("click", e => {
+  const nm = e.target.closest(".nm");
+  if (nm && nm.dataset.n) { showReport(nm.dataset.n); return; }
+  const b = e.target.closest("button[data-k][data-n]");
+  if (b) tapState(b.dataset.n, b.dataset.k);
+});
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.all) {
+    if (t.value === "") return;
+    const k = t.dataset.all;
+    const idx = +t.value;
+    const label = items.find(i => i.k === k).s[idx].t;
+    if (!confirm(`تطبق "${label}" على كل الخدام في الأسبوع ده؟`)) { t.value = ""; return; }
+    const w = S.weeks[cur];
+    S.servants.forEach(n => { rec(w, n)[k] = idx; cascade(w, n, k, idx); });
+    changed();
+    return;
+  }
+  if (t.dataset.n && t.dataset.k) {
+    const r = rec(S.weeks[cur], t.dataset.n);
+    r[t.dataset.k] = t.dataset.k === "note" ? t.value : (+t.value || 0);
+    changed();
+  }
+});
+
+/* ---------- setup and servants ---------- */
 $("done").onclick = () => {
   const list = [...new Set($("names").value.split("\n").map(s=>s.trim()).filter(Boolean))];
   if (!list.length) { alert("اكتب اسم واحد على الأقل"); return; }
   S.servants = list;
   ensureState();
-  save(); showMain(); render();
+  save(); showMain(); render(); flash();
 };
 $("cancelSetup").onclick = () => { showMain(); render(); };
-$("editNames").onclick = showSetup;
+$("editNames").onclick = () => { closeMenu(); showSetup(); };
 
-/* ----- servants ----- */
 $("addSrv").onclick = () => {
   const name = $("newName").value.trim();
   if (!name) { alert("اكتب اسم الخادم"); return; }
@@ -316,53 +490,64 @@ $("delBtn").onclick = () => {
   changed();
 };
 
-/* ----- tracking ----- */
-$("rows").onclick = e => {
-  const b = e.target.closest("button[data-k]");
-  if (!b) return;
+/* ---------- weeks ---------- */
+$("prevWk").onclick = () => { if (cur > 0) { cur--; render(); } };
+$("nextWk").onclick = () => { if (cur < S.weeks.length - 1) { cur++; render(); } };
+$("wkDate").onchange = e => {
   const w = S.weeks[cur];
-  const r = rec(w, b.dataset.n);
-  const it = items.find(i => i.k === b.dataset.k);
-  r[it.k] = (r[it.k] + 1) % it.s.length;
-  cascade(w, b.dataset.n, it.k, r[it.k]);
+  w.date = e.target.value;
+  S.weeks.sort(byDate);
+  cur = S.weeks.indexOf(w);
   changed();
 };
-$("rows").onchange = e => {
-  const inp = e.target;
-  if (!inp.dataset.k) return;
-  const r = rec(S.weeks[cur], inp.dataset.n);
-  r[inp.dataset.k] = inp.dataset.k === "note" ? inp.value : (+inp.value || 0);
+$("addWk").onclick = () => {
+  const last = S.weeks[S.weeks.length - 1];
+  const nw = {date: addDays(last.date, 7), rec: {}};
+  S.weeks.push(nw);
+  S.weeks.sort(byDate);
+  cur = S.weeks.indexOf(nw);
+  ensureState();
+  closeMenu();
+  changed();
+};
+$("delWk").onclick = () => {
+  if (S.weeks.length <= 1) { alert("لازم يفضل أسبوع واحد على الأقل"); return; }
+  if (!confirm(`هتحذف الأسبوع ${cur+1} (${S.weeks[cur].date}) بكل بياناته؟`)) return;
+  S.weeks.splice(cur, 1);
+  cur = Math.min(cur, S.weeks.length - 1);
+  closeMenu();
   changed();
 };
 
-$("thT").onchange = e => {
-  const k = e.target.dataset && e.target.dataset.all;
-  if (!k || e.target.value === "") return;
-  const idx = +e.target.value;
-  const w = S.weeks[cur];
-  S.servants.forEach(n => { rec(w, n)[k] = idx; cascade(w, n, k, idx); });
-  changed();
-};
-$("wk").onchange = e => { cur = +e.target.value; render(); };
-$("wkDate").onchange = e => { S.weeks[cur].date = e.target.value; changed(); };
-$("addWk").onclick = () => { S.weeks.push({date: today(), rec: {}}); cur = S.weeks.length - 1; ensureState(); changed(); };
-$("tabTrack").onclick = () => { $("trackView").classList.remove("hidden"); $("sumView").classList.add("hidden"); };
-$("tabSum").onclick = () => { $("sumView").classList.remove("hidden"); $("trackView").classList.add("hidden"); };
-
-/* ----- date filter ----- */
+/* ---------- view, menu, search, filters ---------- */
+$("vCards").onclick = () => setView("cards");
+$("vTable").onclick = () => setView("table");
+$("vSum").onclick = () => setView("sum");
+$("menuBtn").onclick = () => $("menu").classList.toggle("hidden");
+$("search").oninput = () => render();
 $("fromD").onchange = e => { fromD = e.target.value; render(); };
 $("toD").onchange = e => { toD = e.target.value; render(); };
 $("clearF").onclick = () => { fromD = ""; toD = ""; render(); };
 
-/* ----- report ----- */
-$("sumRows").onclick = e => {
-  const td = e.target.closest("td.nm");
-  if (td) showReport(td.dataset.n);
-};
 $("backRep").onclick = () => { showMain(); render(); };
 $("printRep").onclick = () => window.print();
 
-/* ----- backup / import ----- */
+/* ---------- print the week ---------- */
+$("printWk").onclick = () => {
+  const w = S.weeks[cur];
+  const head = '<tr><th>اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") + '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
+  const rows = S.servants.map(n => {
+    const r = rec(w, n);
+    return `<tr><td style="text-align:right">${esc(n)}</td>` +
+      items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("") +
+      `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
+  }).join("");
+  $("printArea").innerHTML = `<h2>متابعة الأسبوع ${cur+1} — ${esc(w.date)}</h2><table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+  closeMenu();
+  window.print();
+};
+
+/* ---------- backup, import (merge or replace) ---------- */
 $("bkExp").onclick = () => {
   const blob = new Blob([JSON.stringify(S)], {type:"application/json"});
   const a = document.createElement("a");
@@ -372,6 +557,19 @@ $("bkExp").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 $("bkImp").onclick = () => $("impFile").click();
+function mergeData(d){
+  d.servants.forEach(n => { if (!S.servants.includes(n)) S.servants.push(n); });
+  d.weeks.forEach(dw => {
+    let w = S.weeks.find(x => x.date === dw.date);
+    if (!w) { w = {date: dw.date, rec: {}}; S.weeks.push(w); }
+    Object.keys(dw.rec || {}).forEach(n => {
+      const src = dw.rec[n];
+      const dst = rec(w, n);
+      Object.keys(src).forEach(k => { if (src[k] !== 0 && src[k] !== "" && src[k] != null) dst[k] = src[k]; });
+    });
+  });
+  S.weeks.sort(byDate);
+}
 $("impFile").onchange = e => {
   const f = e.target.files[0];
   e.target.value = "";
@@ -381,13 +579,20 @@ $("impFile").onchange = e => {
     let d;
     try { d = JSON.parse(reader.result); } catch(err) { alert("الملف ده مش نسخة احتياطية صالحة"); return; }
     if (!d || !Array.isArray(d.servants) || !Array.isArray(d.weeks)) { alert("الملف ده مش نسخة احتياطية صالحة"); return; }
+    closeMenu();
+    if (confirm("تدمج النسخة مع البيانات الحالية؟\nموافق = دمج (الحاجات المسجلة في النسخة بتتحط، والباقي بيفضل زي ما هو)\nإلغاء = هنسأل إذا عايز تستبدل كل حاجة")) {
+      mergeData(d);
+      ensureState(); cur = S.weeks.length - 1; changed(); showMain();
+      alert("تم الدمج");
+      return;
+    }
     if (!confirm("هيتم استبدال كل البيانات الحالية بالنسخة دي. متأكد؟")) return;
-    S = d; cur = 0; ensureState(); changed(); showMain();
+    S = d; cur = 0; ensureState(); cur = S.weeks.length - 1; changed(); showMain();
   };
   reader.readAsText(f);
 };
 
-/* ----- excel ----- */
+/* ---------- excel ---------- */
 $("exp").onclick = () => {
   const track = [];
   S.weeks.forEach((w, wi) => S.servants.forEach(n => {
@@ -410,9 +615,11 @@ $("exp").onclick = () => {
   XLSX.writeFile(wb, "متابعة_الخدام.xlsx");
 };
 
-/* ----- start ----- */
+/* ---------- start ---------- */
 load();
 ensureState();
+view = defaultView();
+cur = S.weeks.length - 1;
 if (S.servants.length) { showMain(); render(); } else { showSetup(); }
 setStatus("محفوظ على هذا الجهاز");
 </script>
