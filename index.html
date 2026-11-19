@@ -171,6 +171,7 @@ textarea{width:100%;height:280px;padding:8px}
 <script>
 const KEY = "tatbeeq_v1";
 const VIEWKEY = "tatbeeq_view";
+const CONVEX_URL = "https://proper-blackbird-386.eu-west-1.convex.cloud";
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
@@ -300,7 +301,88 @@ function flash(){
   clearTimeout(flashT);
   flashT = setTimeout(() => setStatus("محفوظ على هذا الجهاز"), 1500);
 }
-function changed(){ save(); render(); flash(); }
+function changed(){ save(); render(); markDirty(); }
+
+/* ---------- Convex sync ---------- */
+let accessCode = null;
+try { accessCode = localStorage.getItem("tatbeeq_code"); } catch(e) {}
+let dirty = false, saveTimer = null, lastUpdatedAt = 0, pollBusy = false;
+
+async function callConvex(kind, path, args){
+  const r = await fetch(CONVEX_URL + "/api/" + kind, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({path, args, format: "json"})
+  });
+  const j = await r.json();
+  if (j.status !== "success") throw new Error(j.errorMessage || "خطأ");
+  return j.value;
+}
+function askCode(){
+  const c = prompt("اكتب كود الدخول");
+  if (!c || !c.trim()) return false;
+  accessCode = c.trim();
+  try { localStorage.setItem("tatbeeq_code", accessCode); } catch(e) {}
+  return true;
+}
+function forgetCode(){
+  accessCode = null;
+  try { localStorage.removeItem("tatbeeq_code"); } catch(e) {}
+}
+function markDirty(){
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushNow, 800);
+}
+async function pushNow(){
+  if (!accessCode) return;
+  setStatus("جاري الحفظ...");
+  try {
+    await callConvex("mutation", "state:save", {code: accessCode, data: JSON.stringify(S)});
+    dirty = false;
+    setStatus("تم الحفظ على السيرفر ✓");
+  } catch(e) {
+    if (String(e.message).includes("كود")) {
+      forgetCode();
+      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
+      return;
+    }
+    setStatus("مش متصل، التعديلات محفوظة على الجهاز وهتترفع لما النت يرجع");
+    setTimeout(pushNow, 15000);
+  }
+}
+async function pullNow(){
+  if (!accessCode || dirty || pollBusy) return;
+  const active = document.activeElement;
+  if (active && ["INPUT","SELECT","TEXTAREA"].includes(active.tagName)) return;
+  pollBusy = true;
+  try {
+    const row = await callConvex("query", "state:get", {code: accessCode});
+    if (!row) { markDirty(); }
+    else if (row.updatedAt > lastUpdatedAt) {
+      lastUpdatedAt = row.updatedAt;
+      const d = JSON.parse(row.data);
+      if (d && Array.isArray(d.servants)) {
+        S = d;
+        ensureState();
+        save();
+        cur = Math.min(cur, S.weeks.length - 1);
+        if (S.servants.length && inSetup) showMain();
+        render();
+      }
+    }
+    if (!dirty) setStatus("متصل ✓ بيتحدّث تلقائي");
+  } catch(e) {
+    if (String(e.message).includes("كود")) {
+      forgetCode();
+      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
+    } else {
+      setStatus("مش متصل، بيشتغل على الجهاز");
+    }
+  } finally {
+    pollBusy = false;
+  }
+}
 function closeMenu(){ $("menu").classList.add("hidden"); }
 function setView(v){
   view = v;
@@ -475,7 +557,7 @@ $("done").onclick = () => {
   if (!list.length) { alert("اكتب اسم واحد على الأقل"); return; }
   S.servants = list;
   ensureState();
-  save(); showMain(); render(); flash();
+  save(); showMain(); render(); markDirty();
 };
 $("cancelSetup").onclick = () => { showMain(); render(); };
 $("editNames").onclick = () => { closeMenu(); showSetup(); };
@@ -629,7 +711,15 @@ ensureState();
 view = defaultView();
 cur = S.weeks.length - 1;
 if (S.servants.length) { showMain(); render(); } else { showSetup(); }
-setStatus("محفوظ على هذا الجهاز");
+setStatus("محفوظ على الجهاز، بيتصل بالسيرفر...");
+
+(async () => {
+  if (!accessCode && !askCode()) { setStatus("محفوظ على الجهاز بس (مفيش كود)"); return; }
+  await pullNow();
+  setInterval(pullNow, 10000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) pullNow(); });
+  window.addEventListener("online", () => { pullNow(); if (dirty) pushNow(); });
+})();
 </script>
 </body>
 </html>
