@@ -266,15 +266,50 @@ function load(){ try { const d = JSON.parse(localStorage.getItem(KEY)); if (d &&
 function inRange(w){ return (!fromD || w.date >= fromD) && (!toD || w.date <= toD); }
 function rangeWeeks(){ return S.weeks.filter(inRange); }
 
+// how one recorded value counts: {ok, due}, or null when it is not counted
+function scoreOf(key, value){
+  const label = items.find(i => i.k === key).s[value].t;
+  if (label === "لم يسجل") return {ok:0, due:1};
+  if (key === "att") {
+    if (label === "حضور" || label === "تأخير") return {ok:1, due:1};
+    if (label === "غياب") return {ok:0, due:1};
+    return null;
+  }
+  if (key === "lesson") {
+    if (label === "تحضير" || label === "إلقاء") return {ok:1, due:1};
+    if (label === "لم يتم") return {ok:0, due:1};
+    return null;
+  }
+  if (label === "تم") return {ok:1, due:1};
+  if (label === "لم يتم") return {ok:0, due:1};
+  return null;
+}
+
 function totals(n){
   const t = {tel:0, visit:0, notes:0};
   items.forEach(i => t[i.k] = {ok:0, due:0});
+  const months = {};
   rangeWeeks().forEach(w => {
     const r = rec(w, n);
-    items.forEach(i => { const st = i.s[r[i.k]]; t[i.k].ok += st.ok; t[i.k].due += st.due; });
+    items.forEach(i => {
+      if (i.k === "etiraf") return;
+      const s = scoreOf(i.k, r[i.k]);
+      if (s) { t[i.k].ok += s.ok; t[i.k].due += s.due; }
+    });
+    // confession counts once per month
+    const m = w.date.slice(0, 7);
+    months[m] = months[m] || {done:false, missed:false};
+    const lab = items.find(i => i.k === "etiraf").s[r.etiraf].t;
+    if (lab === "تم") months[m].done = true;
+    if (lab === "لم يتم") months[m].missed = true;
     t.tel += +r.tel || 0;
     t.visit += +r.visit || 0;
     if (r.note) t.notes++;
+  });
+  // every month in range counts as 1; it is 1 of 1 only if done at least once
+  Object.keys(months).forEach(m => {
+    t.etiraf.due += 1;
+    if (months[m].done) t.etiraf.ok += 1;
   });
   return t;
 }
@@ -620,7 +655,10 @@ $("toD").onchange = e => { toD = e.target.value; render(); };
 $("clearF").onclick = () => { fromD = ""; toD = ""; render(); };
 
 $("backRep").onclick = () => { showMain(); render(); };
-$("printRep").onclick = () => window.print();
+$("printRep").onclick = () => {
+  $("printArea").innerHTML = $("reportBody").innerHTML;
+  window.print();
+};
 
 /* ---------- print the week ---------- */
 $("printWk").onclick = () => {
