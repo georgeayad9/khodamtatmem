@@ -65,12 +65,21 @@ textarea{width:100%;height:280px;padding:8px}
 @media (min-width:700px){
   .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+@page{size:A4 landscape;margin:8mm}
 @media print{
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body > *:not(#printArea){display:none !important}
-  #printArea{display:block !important}
-  body{background:#fff;color:#000}
-  #printArea table{font-size:10px}
-  #printArea th,#printArea td{border:1px solid #000;color:#000}
+  #printArea{display:block !important;position:static !important;width:auto !important}
+  body{background:#fff;padding:0;margin:0}
+  .sheet{height:194mm;display:flex;align-items:center;justify-content:center;break-after:page;page-break-after:always;overflow:hidden}
+  .sheet:last-child{break-after:auto;page-break-after:auto}
+  .inner{width:100%}
+  .inner h2{text-align:center;margin:0 0 2mm;font-size:16pt}
+  .inner .sub{text-align:center;margin:0 0 3mm;font-size:10pt;color:#333}
+  #printArea table{width:100%;border-collapse:collapse;font-size:9pt;text-align:center}
+  #printArea th,#printArea td{border:1px solid #666;padding:2px 3px;color:#000;background:#fff}
+  #printArea th.lab{text-align:right;background:#eee !important}
+  #printArea .tot{font-weight:bold;background:#f3f3f3 !important}
 }
 </style>
 </head>
@@ -111,6 +120,7 @@ textarea{width:100%;height:280px;padding:8px}
       <div class="bar">
         <button id="editNames">تعديل الخدام</button>
         <button id="printWk">طباعة الأسبوع</button>
+        <button class="primary" id="pdfAll">PDF لكل الخدام</button>
         <button class="primary" id="exp">تصدير إكسيل</button>
       </div>
       <div class="bar">
@@ -659,6 +669,51 @@ $("printRep").onclick = () => {
   $("printArea").innerHTML = $("reportBody").innerHTML;
   window.print();
 };
+
+/* ---------- PDF: one landscape page per servant ---------- */
+function buildSheets(list){
+  const w = rangeWeeks();
+  const range = (fromD || toD) ? `من ${fromD || "البداية"} إلى ${toD || "النهاية"}` : "كل الأسابيع";
+  $("printArea").innerHTML = list.map(n => {
+    const tt = totals(n);
+    const head = '<tr><th class="lab">البند</th>' +
+      w.map((wk, idx) => `<th>أسبوع ${idx+1}<br><small>${esc(wk.date)}</small></th>`).join("") +
+      '<th class="tot">المجموع</th></tr>';
+    const itemRows = items.map(i => {
+      const cells = w.map(wk => {
+        const st = i.s[rec(wk, n)[i.k]];
+        return `<td style="background:${st.c};color:#fff">${st.t}</td>`;
+      }).join("");
+      return `<tr><th class="lab">${i.l}</th>${cells}<td class="tot">${tt[i.k].ok} من ${tt[i.k].due}</td></tr>`;
+    }).join("");
+    const plainRow = (label, fn, total) =>
+      `<tr><th class="lab">${label}</th>${w.map(wk => `<td>${fn(rec(wk, n))}</td>`).join("")}<td class="tot">${total}</td></tr>`;
+    const extra = plainRow("تليفون", r => r.tel, tt.tel) +
+      plainRow("زيارة", r => r.visit, tt.visit) +
+      plainRow("ملاحظات", r => esc(r.note), tt.notes);
+    return `<div class="sheet"><div class="inner">
+      <h2>${esc(n)}</h2><p class="sub">${range}</p>
+      <table><thead>${head}</thead><tbody>${itemRows}${extra}</tbody></table>
+    </div></div>`;
+  }).join("");
+}
+function exportPdf(list){
+  if (!list.length) { alert("ما فيش خدام"); return; }
+  buildSheets(list);
+  const pa = $("printArea");
+  // measure off-screen at the printable size, then shrink any sheet that overflows
+  pa.style.cssText = "display:block;position:absolute;left:-10000px;top:0;width:281mm";
+  const availW = 281 * 3.7795;   // A4 landscape minus 8mm margins, in px
+  const availH = 194 * 3.7795;
+  pa.querySelectorAll(".inner").forEach(el => {
+    el.style.zoom = "";
+    const s = Math.min(1, availW / el.scrollWidth, availH / el.offsetHeight);
+    if (s < 1) el.style.zoom = s.toFixed(3);
+  });
+  pa.style.cssText = "";
+  window.print();
+}
+$("pdfAll").onclick = () => { closeMenu(); exportPdf(S.servants); };
 
 /* ---------- print the week ---------- */
 $("printWk").onclick = () => {
