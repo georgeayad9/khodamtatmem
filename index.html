@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <title>متابعة الخدام</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -24,6 +25,7 @@ button{cursor:pointer;border-radius:6px;border:1px solid var(--btnb);background:
 button.on{background:var(--green);color:#fff;border-color:var(--green)}
 button.primary{background:var(--green);color:#fff;border-color:var(--green)}
 button.danger{background:#d64545;color:#fff;border-color:#d64545}
+button:disabled{opacity:.4;cursor:default}
 .bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .muted{font-size:13px;color:var(--muted)}
 .hidden{display:none !important}
@@ -40,7 +42,7 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding-bottom:8
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .cell .lab{font-size:12px;color:var(--muted);margin-bottom:3px}
 .cell .st{width:100%}
-.st{padding:9px 4px;border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer}
+.st{padding:9px 4px;border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer;user-select:none;-webkit-touch-callout:none}
 .extra{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .extra .wide{grid-column:1/-1}
 .extra label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
@@ -54,32 +56,35 @@ td.sticky,th.sticky{position:sticky;right:0;z-index:1;background:var(--card)}
 th.sticky{background:var(--head)}
 td.warn{background:var(--warn);color:var(--warnt)}
 .nm{cursor:pointer;text-decoration:underline}
-.tbl-st{width:84px;padding:6px 2px;border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer}
+.tbl-st{width:84px;padding:6px 2px;border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer;user-select:none;-webkit-touch-callout:none}
 input[type=number]{width:60px;padding:4px}
-textarea{width:100%;height:280px;padding:8px}
 .wrap{overflow-x:auto}
 .legend{font-size:12px;color:var(--muted);line-height:1.9;margin-top:12px}
 .report{background:var(--card);padding:12px;border-radius:12px}
-#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;z-index:60;max-width:90%;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheetBox{background:var(--card);width:100%;max-width:520px;padding:16px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;gap:12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opts .opt{padding:12px 4px;border:none;border-radius:8px;color:#fff;font-size:15px}
+.opts .opt.cur{outline:3px solid var(--text)}
+.orow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 #printArea{display:none}
 @media (min-width:700px){
   .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @page{size:A4 landscape;margin:8mm}
 @media print{
-  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body > *:not(#printArea){display:none !important}
   #printArea{display:block !important;position:static !important;width:auto !important}
-  body{background:#fff;padding:0;margin:0}
+  body{background:#fff;color:#000;padding:0;margin:0}
   .sheet{height:194mm;display:flex;align-items:center;justify-content:center;break-after:page;page-break-after:always;overflow:hidden}
   .sheet:last-child{break-after:auto;page-break-after:auto}
   .inner{width:100%}
-  .inner h2{text-align:center;margin:0 0 2mm;font-size:16pt}
-  .inner .sub{text-align:center;margin:0 0 3mm;font-size:10pt;color:#333}
-  #printArea table{width:100%;border-collapse:collapse;font-size:9pt;text-align:center}
-  #printArea th,#printArea td{border:1px solid #666;padding:2px 3px;color:#000;background:#fff}
-  #printArea th.lab{text-align:right;background:#eee !important}
-  #printArea .tot{font-weight:bold;background:#f3f3f3 !important}
+  .inner h2{text-align:center;margin:0 0 2mm;font-size:16pt;color:#000}
+  .inner .sub{text-align:center;margin:0 0 3mm;font-size:10pt;color:#000}
+  #printArea table{width:100%;border-collapse:collapse;font-size:9pt;text-align:center;background:#fff}
+  #printArea th,#printArea td{border:1px solid #000;padding:2px 3px;color:#000;background:#fff}
+  #printArea .tot{font-weight:bold}
 }
 </style>
 </head>
@@ -88,7 +93,7 @@ textarea{width:100%;height:280px;padding:8px}
 <div id="setup" class="hidden">
   <h2>إضافة الخدام</h2>
   <p class="muted">اكتب كل اسم في سطر لوحده، وبعدين اضغط Done.</p>
-  <textarea id="names"></textarea>
+  <textarea id="names" style="width:100%;height:280px;padding:8px"></textarea>
   <div class="bar" style="margin-top:8px">
     <button class="primary" id="done">Done</button>
     <button id="cancelSetup">رجوع</button>
@@ -113,13 +118,18 @@ textarea{width:100%;height:280px;padding:8px}
       <button id="vCards">كروت</button>
       <button id="vTable">جدول كامل</button>
       <button id="vSum">المجاميع</button>
+      <button id="onlyMiss">ناقص فقط</button>
+      <button id="undoBtn">تراجع</button>
       <button id="menuBtn" style="margin-inline-start:auto">⋯ المزيد</button>
     </div>
     <div class="status" id="status">محفوظ على هذا الجهاز</div>
     <div id="menu" class="panel hidden">
       <div class="bar">
         <button id="editNames">تعديل الخدام</button>
+        <button id="orderBtn">ترتيب الخدام</button>
         <button id="printWk">طباعة الأسبوع</button>
+      </div>
+      <div class="bar">
         <button class="primary" id="pdfAll">PDF لكل الخدام</button>
         <button class="primary" id="exp">تصدير إكسيل</button>
       </div>
@@ -146,6 +156,7 @@ textarea{width:100%;height:280px;padding:8px}
         <input type="file" id="impFile" accept=".json,application/json" class="hidden">
       </div>
     </div>
+    <div id="orderPanel" class="panel hidden"></div>
   </header>
 
   <div id="cardsView"></div>
@@ -162,8 +173,8 @@ textarea{width:100%;height:280px;padding:8px}
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
     الدرس: رمادي = لم يسجل، تحضير / إلقاء / لا ينطبق / لم يتم.<br>
     لو الحضور = غياب، الصلاة والدرس والاجتماع بتتحول لم يتم تلقائي. لو التناول = لم يتم، الشماس بيتحول لم يتم تلقائي.<br>
-    عشية: تم أو لم يتم بس.<br>
-    لا ينطبق مش بتدخل في المجموع. المجاميع بتجمع الأسابيع داخل الفلتر. "ناقص" = ما اتعملش افتقاد / تسبحة / تناول في آخر 4 أسابيع. اضغط اسم الخادم لتقريره.
+    اضغط الزرار للتبديل، واضغط ضغطة طويلة (أو كليك يمين) عشان تختار من قائمة.<br>
+    لا ينطبق مش بتدخل في المجموع. "لم يسجل" بتتحسب صفر. الاعتراف مرة في الشهر. المجاميع بتجمع الأسابيع داخل الفلتر.
   </div>
 </div>
 
@@ -175,10 +186,13 @@ textarea{width:100%;height:280px;padding:8px}
   <div class="report" id="reportBody"></div>
 </div>
 
+<div id="picker" class="overlay hidden"><div class="sheetBox" id="pickerBox"></div></div>
 <div id="printArea"></div>
 <div id="toast"></div>
 
 <script>
+if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(() => {}); }
+
 const KEY = "tatbeeq_v1";
 const VIEWKEY = "tatbeeq_view";
 const CONVEX_URL = "https://proper-blackbird-386.eu-west-1.convex.cloud";
@@ -191,31 +205,32 @@ function addDays(iso, n){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
 const byDate = (a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+function timeStr(){ return new Date().toLocaleTimeString("ar-EG", {hour:"2-digit", minute:"2-digit"}); }
 
 const att = [
   {t:"لم يسجل", c:"#888"},
-  {t:"حضور", c:"#2e9e5b", ok:1, due:1},
-  {t:"تأخير", c:"#e0a100", ok:1, due:1},
-  {t:"غياب", c:"#d64545", ok:0, due:1},
-  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
+  {t:"حضور", c:"#2e9e5b"},
+  {t:"تأخير", c:"#e0a100"},
+  {t:"غياب", c:"#d64545"},
+  {t:"لا ينطبق", c:"#3b78c4"}
 ];
 const lesson = [
   {t:"لم يسجل", c:"#888"},
-  {t:"تحضير", c:"#2e9e5b", ok:1, due:1},
-  {t:"إلقاء", c:"#800020", ok:1, due:1},
-  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0},
-  {t:"لم يتم", c:"#d64545", ok:0, due:1}
+  {t:"تحضير", c:"#2e9e5b"},
+  {t:"إلقاء", c:"#800020"},
+  {t:"لا ينطبق", c:"#3b78c4"},
+  {t:"لم يتم", c:"#d64545"}
 ];
 const done = [
   {t:"لم يسجل", c:"#888"},
-  {t:"تم", c:"#2e9e5b", ok:1, due:1},
-  {t:"لم يتم", c:"#d64545", ok:0, due:1},
-  {t:"لا ينطبق", c:"#3b78c4", ok:0, due:0}
+  {t:"تم", c:"#2e9e5b"},
+  {t:"لم يتم", c:"#d64545"},
+  {t:"لا ينطبق", c:"#3b78c4"}
 ];
 const done3 = [
   {t:"لم يسجل", c:"#888"},
-  {t:"تم", c:"#2e9e5b", ok:1, due:1},
-  {t:"لم يتم", c:"#d64545", ok:0, due:1}
+  {t:"تم", c:"#2e9e5b"},
+  {t:"لم يتم", c:"#d64545"}
 ];
 const items = [
   {k:"att", l:"الحضور", s:att},
@@ -238,24 +253,32 @@ let inSetup = false;
 let cur = 0;
 let fromD = "", toD = "";
 let view = "cards";
+let onlyMissing = false;
+let undoStack = [];
+let prevSnap = "";
 
 /* ---------- data helpers ---------- */
 function blank(){ const o={tel:0, visit:0, note:""}; items.forEach(i=>o[i.k]=0); return o; }
 function rec(w, n){ if(!w.rec[n]) w.rec[n]=blank(); return w.rec[n]; }
 function idxOf(key, label){ return items.find(i => i.k === key).s.findIndex(s => s.t === label); }
+function itemLabel(k){ return items.find(i => i.k === k).l; }
 
-// automatic changes that follow from one choice, same servant and week
+// automatic changes that follow from one choice; returns the labels that changed
 function cascade(w, n, key, value){
   const r = rec(w, n);
   const label = items.find(i => i.k === key).s[value].t;
+  const touched = [];
+  const set = (k, lab) => {
+    const idx = idxOf(k, lab);
+    if (r[k] !== idx) { r[k] = idx; touched.push(itemLabel(k)); }
+  };
   if (key === "att" && label === "غياب") {
-    r.salat = idxOf("salat", "لم يتم");
-    r.ejtema = idxOf("ejtema", "لم يتم");
-    r.lesson = idxOf("lesson", "لم يتم");
+    set("salat", "لم يتم");
+    set("ejtema", "لم يتم");
+    set("lesson", "لم يتم");
   }
-  if (key === "tanawol" && label === "لم يتم") {
-    r.shamas = idxOf("shamas", "لم يتم");
-  }
+  if (key === "tanawol" && label === "لم يتم") set("shamas", "لم يتم");
+  return touched;
 }
 function ensureState(){
   if (!Array.isArray(S.servants)) S.servants = [];
@@ -295,28 +318,27 @@ function scoreOf(key, value){
   return null;
 }
 
-function totals(n){
+function totals(n, weeksArg){
+  const W = weeksArg || rangeWeeks();
   const t = {tel:0, visit:0, notes:0};
   items.forEach(i => t[i.k] = {ok:0, due:0});
   const months = {};
-  rangeWeeks().forEach(w => {
+  W.forEach(w => {
     const r = rec(w, n);
     items.forEach(i => {
       if (i.k === "etiraf") return;
       const s = scoreOf(i.k, r[i.k]);
       if (s) { t[i.k].ok += s.ok; t[i.k].due += s.due; }
     });
-    // confession counts once per month
     const m = w.date.slice(0, 7);
-    months[m] = months[m] || {done:false, missed:false};
+    months[m] = months[m] || {done:false};
     const lab = items.find(i => i.k === "etiraf").s[r.etiraf].t;
     if (lab === "تم") months[m].done = true;
-    if (lab === "لم يتم") months[m].missed = true;
     t.tel += +r.tel || 0;
     t.visit += +r.visit || 0;
     if (r.note) t.notes++;
   });
-  // every month in range counts as 1; it is 1 of 1 only if done at least once
+  // confession: every month counts 1, it is 1 of 1 only if done at least once
   Object.keys(months).forEach(m => {
     t.etiraf.due += 1;
     if (months[m].done) t.etiraf.ok += 1;
@@ -328,7 +350,6 @@ function missing(n){
   const last = S.weeks.slice(-4);
   return WARN_KEYS.filter(x => !last.some(w => rec(w, n)[x.k] === 1)).map(x => x.l);
 }
-// items still at "لم يسجل" in this week
 function unrecorded(w, n){
   const r = rec(w, n);
   return items.filter(i => r[i.k] === 0).map(i => i.l);
@@ -339,94 +360,32 @@ function recorded(w, n){
 }
 
 /* ---------- ui helpers ---------- */
-let flashT = null;
 function setStatus(t){ $("status").textContent = t; }
-function flash(){
-  setStatus("تم الحفظ ✓");
-  clearTimeout(flashT);
-  flashT = setTimeout(() => setStatus("محفوظ على هذا الجهاز"), 1500);
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { t.style.display = "none"; }, 2500);
 }
-function changed(){ save(); render(); markDirty(); }
-
-/* ---------- Convex sync ---------- */
-let accessCode = null;
-try { accessCode = localStorage.getItem("tatbeeq_code"); } catch(e) {}
-let dirty = false, saveTimer = null, lastUpdatedAt = 0, pollBusy = false;
-
-async function callConvex(kind, path, args){
-  const r = await fetch(CONVEX_URL + "/api/" + kind, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({path, args, format: "json"})
-  });
-  const j = await r.json();
-  if (j.status !== "success") throw new Error(j.errorMessage || "خطأ");
-  return j.value;
+function changed(){
+  undoStack.push(prevSnap);
+  if (undoStack.length > 30) undoStack.shift();
+  prevSnap = JSON.stringify(S);
+  save();
+  render();
+  markDirty();
 }
-function askCode(){
-  const c = prompt("اكتب كود الدخول");
-  if (!c || !c.trim()) return false;
-  accessCode = c.trim();
-  try { localStorage.setItem("tatbeeq_code", accessCode); } catch(e) {}
-  return true;
-}
-function forgetCode(){
-  accessCode = null;
-  try { localStorage.removeItem("tatbeeq_code"); } catch(e) {}
-}
-function markDirty(){
-  dirty = true;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(pushNow, 800);
-}
-async function pushNow(){
-  if (!accessCode) return;
-  setStatus("جاري الحفظ...");
-  try {
-    await callConvex("mutation", "state:save", {code: accessCode, data: JSON.stringify(S)});
-    dirty = false;
-    setStatus("تم الحفظ على السيرفر ✓");
-  } catch(e) {
-    if (String(e.message).includes("كود")) {
-      forgetCode();
-      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
-      return;
-    }
-    setStatus("مش متصل، التعديلات محفوظة على الجهاز وهتترفع لما النت يرجع");
-    setTimeout(pushNow, 15000);
-  }
-}
-async function pullNow(){
-  if (!accessCode || dirty || pollBusy) return;
-  const active = document.activeElement;
-  if (active && ["INPUT","SELECT","TEXTAREA"].includes(active.tagName)) return;
-  pollBusy = true;
-  try {
-    const row = await callConvex("query", "state:get", {code: accessCode});
-    if (!row) { markDirty(); }
-    else if (row.updatedAt > lastUpdatedAt) {
-      lastUpdatedAt = row.updatedAt;
-      const d = JSON.parse(row.data);
-      if (d && Array.isArray(d.servants)) {
-        S = d;
-        ensureState();
-        save();
-        cur = Math.min(cur, S.weeks.length - 1);
-        if (S.servants.length && inSetup) showMain();
-        render();
-      }
-    }
-    if (!dirty) setStatus("متصل ✓ بيتحدّث تلقائي");
-  } catch(e) {
-    if (String(e.message).includes("كود")) {
-      forgetCode();
-      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
-    } else {
-      setStatus("مش متصل، بيشتغل على الجهاز");
-    }
-  } finally {
-    pollBusy = false;
-  }
+function undo(){
+  if (!undoStack.length) { toast("مفيش حاجة تتراجع"); return; }
+  S = JSON.parse(undoStack.pop());
+  ensureState();
+  prevSnap = JSON.stringify(S);
+  cur = Math.min(cur, S.weeks.length - 1);
+  save();
+  render();
+  markDirty();
+  toast("تم التراجع");
 }
 function closeMenu(){ $("menu").classList.add("hidden"); }
 function setView(v){
@@ -462,24 +421,37 @@ function showReport(n){
       `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
   }).join("");
   const sumCells = items.map(i => `<td><b>${t[i.k].ok} من ${t[i.k].due}</b></td>`).join("");
+  const months = {};
+  w.forEach(wk => { const m = wk.date.slice(0, 7); (months[m] = months[m] || []).push(wk); });
+  const monthRows = Object.keys(months).sort().map(m => {
+    const mt = totals(n, months[m]);
+    return `<tr><td>${m}</td>` + items.map(i => `<td>${mt[i.k].ok} من ${mt[i.k].due}</td>`).join("") + `</tr>`;
+  }).join("");
   const range = (fromD || toD) ? `من ${fromD || "البداية"} إلى ${toD || "النهاية"}` : "كل الأسابيع";
   $("reportBody").innerHTML =
     `<h2>تقرير: ${esc(n)}</h2><p class="muted">${range}</p>` +
     `<div class="wrap"><table><thead><tr><th>التاريخ</th>${items.map(i=>`<th>${i.l}</th>`).join("")}<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr></thead>` +
-    `<tbody>${rows}<tr><th>الإجمالي</th>${sumCells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr></tbody></table></div>`;
+    `<tbody>${rows}<tr><th>الإجمالي</th>${sumCells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr></tbody></table></div>` +
+    `<h3 style="margin:14px 0 6px;font-size:16px;font-weight:500">حسب الشهر</h3>` +
+    `<div class="wrap"><table><thead><tr><th>الشهر</th>${items.map(i=>`<th>${i.l}</th>`).join("")}</tr></thead><tbody>${monthRows}</tbody></table></div>`;
   $("main").classList.add("hidden");
   $("setup").classList.add("hidden");
   $("report").classList.remove("hidden");
 }
 
 /* ---------- render ---------- */
+function visibleServants(w){
+  const q = $("search").value.trim();
+  return S.servants.filter(n =>
+    (!q || n.includes(q)) && (!onlyMissing || missing(n).length > 0)
+  );
+}
 function render(){
   ensureState();
   if (cur >= S.weeks.length) cur = S.weeks.length - 1;
   if (cur < 0) cur = 0;
   const w = S.weeks[cur];
-  const q = $("search").value.trim();
-  const list = S.servants.filter(n => !q || n.includes(q));
+  const list = visibleServants(w);
 
   $("wkName").textContent = `الأسبوع ${cur+1}`;
   $("wkDate").value = w.date;
@@ -488,6 +460,8 @@ function render(){
   $("fromD").value = fromD;
   $("toD").value = toD;
   $("delSel").innerHTML = S.servants.map(n => `<option>${esc(n)}</option>`).join("");
+  $("onlyMiss").classList.toggle("on", onlyMissing);
+  $("undoBtn").disabled = !undoStack.length;
 
   ["vCards","vTable","vSum"].forEach(id => $(id).classList.remove("on"));
   $({cards:"vCards", table:"vTable", sum:"vSum"}[view]).classList.add("on");
@@ -498,10 +472,11 @@ function render(){
   if (view === "cards") renderCards(w, list);
   if (view === "table") renderTable(w, list);
   if (view === "sum") renderSum(list);
+  if (!$("orderPanel").classList.contains("hidden")) renderOrder();
 }
 
 function renderCards(w, list){
-  if (!list.length) { $("cardsView").innerHTML = '<p class="muted">ما فيش خدام بالاسم ده.</p>'; return; }
+  if (!list.length) { $("cardsView").innerHTML = '<p class="muted">ما فيش خدام مطابقين.</p>'; return; }
   $("cardsView").innerHTML = list.map(n => {
     const r = rec(w, n);
     const miss = missing(n);
@@ -559,21 +534,88 @@ function renderSum(list){
   }).join("");
 }
 
-/* ---------- taps and changes (delegated) ---------- */
+function renderOrder(){
+  $("orderPanel").innerHTML = '<b style="font-weight:500">ترتيب الخدام</b>' +
+    S.servants.map((n, i) =>
+      `<div class="orow"><span>${esc(n)}</span><span class="bar">` +
+      `<button data-move="up" data-i="${i}" ${i===0?"disabled":""}>▲</button>` +
+      `<button data-move="down" data-i="${i}" ${i===S.servants.length-1?"disabled":""}>▼</button></span></div>`
+    ).join("");
+}
+
+/* ---------- picker (long press or right click) ---------- */
+function openPicker(n, k){
+  const w = S.weeks[cur];
+  const it = items.find(i => i.k === k);
+  const curVal = rec(w, n)[k];
+  $("pickerBox").innerHTML =
+    `<b style="font-weight:500">${esc(n)} — ${it.l}</b>` +
+    `<div class="opts">${it.s.map((s, idx) =>
+      `<button class="opt${idx===curVal?" cur":""}" style="background:${s.c}" data-pick="${idx}" data-n="${esc(n)}" data-k="${k}">${s.t}</button>`
+    ).join("")}</div>` +
+    `<button id="pickCancel">إلغاء</button>`;
+  $("picker").classList.remove("hidden");
+}
+function closePicker(){ $("picker").classList.add("hidden"); }
+
+/* ---------- taps and changes ---------- */
 function tapState(n, k){
   const w = S.weeks[cur];
   const r = rec(w, n);
   const it = items.find(i => i.k === k);
   r[k] = (r[k] + 1) % it.s.length;
-  cascade(w, n, k, r[k]);
+  const touched = cascade(w, n, k, r[k]);
   changed();
+  if (touched.length) toast("اتحوّلت تلقائي: " + touched.join("، "));
 }
 
+let pressTimer = null, longFired = false;
+document.addEventListener("pointerdown", e => {
+  const b = e.target.closest("button[data-k][data-n]");
+  if (!b) return;
+  longFired = false;
+  pressTimer = setTimeout(() => { longFired = true; openPicker(b.dataset.n, b.dataset.k); }, 500);
+});
+["pointerup","pointerleave","pointercancel"].forEach(ev =>
+  document.addEventListener(ev, () => clearTimeout(pressTimer))
+);
+document.addEventListener("contextmenu", e => {
+  const b = e.target.closest("button[data-k][data-n]");
+  if (!b) return;
+  e.preventDefault();
+  openPicker(b.dataset.n, b.dataset.k);
+});
+
 document.addEventListener("click", e => {
+  const pick = e.target.closest("[data-pick]");
+  if (pick) {
+    const w = S.weeks[cur];
+    const r = rec(w, pick.dataset.n);
+    const idx = +pick.dataset.pick;
+    r[pick.dataset.k] = idx;
+    const touched = cascade(w, pick.dataset.n, pick.dataset.k, idx);
+    closePicker();
+    changed();
+    if (touched.length) toast("اتحوّلت تلقائي: " + touched.join("، "));
+    return;
+  }
+  if (e.target.closest("#pickCancel") || e.target.id === "picker") { closePicker(); return; }
+  const mv = e.target.closest("[data-move]");
+  if (mv) {
+    const i = +mv.dataset.i;
+    const j = mv.dataset.move === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= S.servants.length) return;
+    [S.servants[i], S.servants[j]] = [S.servants[j], S.servants[i]];
+    changed();
+    return;
+  }
   const nm = e.target.closest(".nm");
   if (nm && nm.dataset.n) { showReport(nm.dataset.n); return; }
   const b = e.target.closest("button[data-k][data-n]");
-  if (b) tapState(b.dataset.n, b.dataset.k);
+  if (b) {
+    if (longFired) { longFired = false; return; }
+    tapState(b.dataset.n, b.dataset.k);
+  }
 });
 
 document.addEventListener("change", e => {
@@ -585,8 +627,13 @@ document.addEventListener("change", e => {
     const label = items.find(i => i.k === k).s[idx].t;
     if (!confirm(`تطبق "${label}" على كل الخدام في الأسبوع ده؟`)) { t.value = ""; return; }
     const w = S.weeks[cur];
-    S.servants.forEach(n => { rec(w, n)[k] = idx; cascade(w, n, k, idx); });
+    const all = new Set();
+    S.servants.forEach(n => {
+      rec(w, n)[k] = idx;
+      cascade(w, n, k, idx).forEach(x => all.add(x));
+    });
     changed();
+    if (all.size) toast("اتحوّلت تلقائي: " + [...all].join("، "));
     return;
   }
   if (t.dataset.n && t.dataset.k) {
@@ -595,6 +642,91 @@ document.addEventListener("change", e => {
     changed();
   }
 });
+
+/* ---------- Convex sync ---------- */
+let accessCode = null;
+try { accessCode = localStorage.getItem("tatbeeq_code"); } catch(e) {}
+let dirty = false, saveTimer = null, lastUpdatedAt = 0, pollBusy = false;
+
+async function callConvex(kind, path, args){
+  const r = await fetch(CONVEX_URL + "/api/" + kind, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({path, args, format: "json"})
+  });
+  const j = await r.json();
+  if (j.status !== "success") throw new Error(j.errorMessage || "خطأ");
+  return j.value;
+}
+function askCode(){
+  const c = prompt("اكتب كود الدخول");
+  if (!c || !c.trim()) return false;
+  accessCode = c.trim();
+  try { localStorage.setItem("tatbeeq_code", accessCode); } catch(e) {}
+  return true;
+}
+function forgetCode(){
+  accessCode = null;
+  try { localStorage.removeItem("tatbeeq_code"); } catch(e) {}
+}
+function markDirty(){
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushNow, 800);
+}
+async function pushNow(){
+  if (!accessCode) return;
+  if (!navigator.onLine) { setStatus("مفيش نت، التعديلات محفوظة على الجهاز وهتترفع لما النت يرجع"); return; }
+  setStatus("جاري الحفظ...");
+  try {
+    await callConvex("mutation", "state:save", {code: accessCode, data: JSON.stringify(S)});
+    dirty = false;
+    setStatus("تم الحفظ على السيرفر ✓ " + timeStr());
+  } catch(e) {
+    if (String(e.message).includes("كود")) {
+      forgetCode();
+      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
+      return;
+    }
+    setStatus("مش متصل، التعديلات محفوظة على الجهاز وهتترفع لما النت يرجع");
+    setTimeout(pushNow, 15000);
+  }
+}
+async function pullNow(){
+  if (!accessCode || dirty || pollBusy) return;
+  const active = document.activeElement;
+  if (active && ["INPUT","SELECT","TEXTAREA"].includes(active.tagName)) return;
+  if (!$("picker").classList.contains("hidden")) return;
+  pollBusy = true;
+  try {
+    const row = await callConvex("query", "state:get", {code: accessCode});
+    if (!row) { markDirty(); }
+    else if (row.updatedAt > lastUpdatedAt) {
+      lastUpdatedAt = row.updatedAt;
+      const d = JSON.parse(row.data);
+      if (d && Array.isArray(d.servants)) {
+        S = d;
+        ensureState();
+        prevSnap = JSON.stringify(S);
+        undoStack = [];
+        save();
+        cur = Math.min(cur, S.weeks.length - 1);
+        if (S.servants.length && inSetup) showMain();
+        render();
+      }
+    }
+    if (!dirty) setStatus("متصل ✓ آخر تحديث " + timeStr());
+  } catch(e) {
+    if (String(e.message).includes("كود")) {
+      forgetCode();
+      setStatus("كود غلط، حدّث الصفحة وادخل الكود الصح");
+    } else {
+      setStatus("مش متصل، بيشتغل على الجهاز");
+    }
+  } finally {
+    pollBusy = false;
+  }
+}
 
 /* ---------- setup and servants ---------- */
 $("done").onclick = () => {
@@ -623,6 +755,11 @@ $("delBtn").onclick = () => {
   S.servants = S.servants.filter(n => n !== name);
   S.weeks.forEach(w => { delete w.rec[name]; });
   changed();
+};
+$("orderBtn").onclick = () => {
+  closeMenu();
+  $("orderPanel").classList.toggle("hidden");
+  renderOrder();
 };
 
 /* ---------- weeks ---------- */
@@ -654,10 +791,12 @@ $("delWk").onclick = () => {
   changed();
 };
 
-/* ---------- view, menu, search, filters ---------- */
+/* ---------- view, menu, search, filters, undo ---------- */
 $("vCards").onclick = () => setView("cards");
 $("vTable").onclick = () => setView("table");
 $("vSum").onclick = () => setView("sum");
+$("onlyMiss").onclick = () => { onlyMissing = !onlyMissing; render(); };
+$("undoBtn").onclick = undo;
 $("menuBtn").onclick = () => $("menu").classList.toggle("hidden");
 $("search").oninput = () => render();
 $("fromD").onchange = e => { fromD = e.target.value; render(); };
@@ -666,34 +805,30 @@ $("clearF").onclick = () => { fromD = ""; toD = ""; render(); };
 
 $("backRep").onclick = () => { showMain(); render(); };
 $("printRep").onclick = () => {
-  $("printArea").innerHTML = $("reportBody").innerHTML;
+  $("printArea").innerHTML = `<div class="sheet"><div class="inner">${$("reportBody").innerHTML}</div></div>`;
   window.print();
 };
 
-/* ---------- PDF: one landscape page per servant ---------- */
+/* ---------- PDF: one landscape page per servant, black and white ---------- */
 function buildSheets(list){
   const w = rangeWeeks();
   const range = (fromD || toD) ? `من ${fromD || "البداية"} إلى ${toD || "النهاية"}` : "كل الأسابيع";
   $("printArea").innerHTML = list.map(n => {
     const tt = totals(n);
-    const head = '<tr><th class="lab">البند</th>' +
-      w.map((wk, idx) => `<th>أسبوع ${idx+1}<br><small>${esc(wk.date)}</small></th>`).join("") +
-      '<th class="tot">المجموع</th></tr>';
-    const itemRows = items.map(i => {
-      const cells = w.map(wk => {
-        const st = i.s[rec(wk, n)[i.k]];
-        return `<td style="background:${st.c};color:#fff">${st.t}</td>`;
-      }).join("");
-      return `<tr><th class="lab">${i.l}</th>${cells}<td class="tot">${tt[i.k].ok} من ${tt[i.k].due}</td></tr>`;
+    const head = '<tr><th>الأسبوع</th>' + items.map(i => `<th>${i.l}</th>`).join("") +
+      '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
+    const rows = w.map((wk, idx) => {
+      const r = rec(wk, n);
+      const cells = items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("");
+      return `<tr><th>${idx+1}<br><small>${esc(wk.date)}</small></th>${cells}` +
+        `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
     }).join("");
-    const plainRow = (label, fn, total) =>
-      `<tr><th class="lab">${label}</th>${w.map(wk => `<td>${fn(rec(wk, n))}</td>`).join("")}<td class="tot">${total}</td></tr>`;
-    const extra = plainRow("تليفون", r => r.tel, tt.tel) +
-      plainRow("زيارة", r => r.visit, tt.visit) +
-      plainRow("ملاحظات", r => esc(r.note), tt.notes);
+    const totRow = '<tr class="tot"><th>المجموع</th>' +
+      items.map(i => `<td>${tt[i.k].ok} من ${tt[i.k].due}</td>`).join("") +
+      `<td>${tt.tel}</td><td>${tt.visit}</td><td>${tt.notes}</td></tr>`;
     return `<div class="sheet"><div class="inner">
       <h2>${esc(n)}</h2><p class="sub">${range}</p>
-      <table><thead>${head}</thead><tbody>${itemRows}${extra}</tbody></table>
+      <table><thead>${head}</thead><tbody>${rows}${totRow}</tbody></table>
     </div></div>`;
   }).join("");
 }
@@ -703,7 +838,7 @@ function exportPdf(list){
   const pa = $("printArea");
   // measure off-screen at the printable size, then shrink any sheet that overflows
   pa.style.cssText = "display:block;position:absolute;left:-10000px;top:0;width:281mm";
-  const availW = 281 * 3.7795;   // A4 landscape minus 8mm margins, in px
+  const availW = 281 * 3.7795;
   const availH = 194 * 3.7795;
   pa.querySelectorAll(".inner").forEach(el => {
     el.style.zoom = "";
@@ -714,8 +849,6 @@ function exportPdf(list){
   window.print();
 }
 $("pdfAll").onclick = () => { closeMenu(); exportPdf(S.servants); };
-
-/* ---------- print the week ---------- */
 $("printWk").onclick = () => {
   const w = S.weeks[cur];
   const head = '<tr><th>اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") + '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
@@ -725,7 +858,7 @@ $("printWk").onclick = () => {
       items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("") +
       `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
   }).join("");
-  $("printArea").innerHTML = `<h2>متابعة الأسبوع ${cur+1} — ${esc(w.date)}</h2><table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+  $("printArea").innerHTML = `<div class="sheet"><div class="inner"><h2>متابعة الأسبوع ${cur+1} — ${esc(w.date)}</h2><table><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
   closeMenu();
   window.print();
 };
@@ -770,7 +903,7 @@ $("impFile").onchange = e => {
       return;
     }
     if (!confirm("هيتم استبدال كل البيانات الحالية بالنسخة دي. متأكد؟")) return;
-    S = d; cur = 0; ensureState(); cur = S.weeks.length - 1; changed(); showMain();
+    S = d; ensureState(); cur = S.weeks.length - 1; changed(); showMain();
   };
   reader.readAsText(f);
 };
@@ -803,8 +936,10 @@ load();
 ensureState();
 view = defaultView();
 cur = S.weeks.length - 1;
+prevSnap = JSON.stringify(S);
 if (S.servants.length) { showMain(); render(); } else { showSetup(); }
 setStatus("محفوظ على الجهاز، بيتصل بالسيرفر...");
+window.addEventListener("offline", () => setStatus("مفيش نت، التعديلات محفوظة على الجهاز"));
 
 (async () => {
   if (!accessCode && !askCode()) { setStatus("محفوظ على الجهاز بس (مفيش كود)"); return; }
