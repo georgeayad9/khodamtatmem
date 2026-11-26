@@ -13,66 +13,85 @@
 <title>متابعة الخدام</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#fafafa;--card:#fff;--text:#222;--muted:#555;--border:#ddd;--btnb:#bbb;--head:#f2f2f2;--green:#1d6f42;--warn:#fde2e2;--warnt:#a32020}
-@media (prefers-color-scheme: dark){
-  :root{--bg:#1c1c1e;--card:#2c2c2e;--text:#eee;--muted:#aaa;--border:#555;--btnb:#666;--head:#3a3a3c;--green:#2e9e5b;--warn:#5a2222;--warnt:#ffb3b3}
-}
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d1d1f;--muted:#8e8e93;--border:#e5e5ea;--seg:#e9ebef;--green:#1d6f42;--red:#d64545;--ok:#e3f6ea;--okt:#1b7a3e;--no:#fde7e7;--not:#b3261e;--warn:#fff1cc;--warnt:#8a5a00;--na:#e8f0fe;--nat:#2456a6;--nr:#f0f1f4;--nrt:#9a9ca3}
+@media (prefers-color-scheme: dark){:root{--bg:#000;--card:#1c1c1e;--text:#f2f2f7;--muted:#8e8e93;--border:#2c2c2e;--seg:#2c2c2e;--green:#2e9e5b;--red:#ff453a;--ok:#17381f;--okt:#6fe39a;--no:#3d1c1c;--not:#ff8a85;--warn:#3d3117;--warnt:#ffd27a;--na:#17253d;--nat:#8ab6ff;--nr:#2c2c2e;--nrt:#6e6e73}}
 *{box-sizing:border-box}
-input,select,textarea{font-size:16px;background:var(--card);color:var(--text);border:1px solid var(--btnb);border-radius:6px;padding:6px}
-body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:12px;background:var(--bg);color:var(--text)}
-h2{margin:6px 0 10px}
-button{cursor:pointer;border-radius:6px;border:1px solid var(--btnb);background:var(--card);color:var(--text);padding:7px 12px;font-size:14px}
-button.on{background:var(--green);color:#fff;border-color:var(--green)}
-button.primary{background:var(--green);color:#fff;border-color:var(--green)}
-button.danger{background:#d64545;color:#fff;border-color:#d64545}
-button:disabled{opacity:.4;cursor:default}
+body{font-family:-apple-system,system-ui,Tahoma,sans-serif;margin:0;padding:12px 12px 40px;background:var(--bg);color:var(--text)}
+h2{margin:6px 0 10px;font-weight:700}
+button{font-family:inherit;font-size:14px;cursor:pointer;border:none;border-radius:10px;background:var(--card);color:var(--text);padding:8px 12px}
+button.primary{background:var(--green);color:#fff}
+button.danger{background:var(--red);color:#fff}
+button:disabled{opacity:.35;cursor:default}
+input,select,textarea{font-family:inherit;font-size:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px}
 .bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .muted{font-size:13px;color:var(--muted)}
 .hidden{display:none !important}
-header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding-bottom:8px}
-.weekNav{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:2px 0 10px}
+.weekNav{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border-radius:16px;padding:8px;margin-bottom:10px}
+.weekNav button{padding:8px 12px;background:var(--seg)}
 .weekNav .title{text-align:center}
-.weekNav .title b{display:block;font-size:17px;font-weight:500}
-.weekNav input[type=date]{font-size:13px;padding:3px}
-.status{font-size:12px;color:var(--muted);margin:6px 0}
-.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
-.panel .bar button{flex:1 1 auto}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px}
-.card.alert{border:2px solid var(--warnt)}
-.card .nm{font-size:17px;font-weight:500;text-decoration:none;display:block;margin-bottom:8px}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.cell .lab{font-size:12px;color:var(--muted);margin-bottom:3px}
-.cell .st{width:100%}
-.st{padding:9px 4px;border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer;user-select:none;-webkit-touch-callout:none}
+.weekNav .title b{display:block;font-size:16px;font-weight:600}
+.weekNav input[type=date]{font-size:12px;padding:2px 6px;border:none;background:transparent;color:var(--muted)}
+.seg{display:flex;background:var(--seg);border-radius:11px;padding:3px;gap:2px;margin-bottom:8px}
+.seg button{flex:1;background:transparent;color:var(--muted);padding:7px 0;border-radius:8px;font-size:13px}
+.seg button.on{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.toolrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+#search{flex:1;min-width:120px;border:none}
+#missSel{border:none}
+.status{font-size:12px;color:var(--muted);margin:4px 2px}
+.panel{background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border-radius:18px;padding:12px;margin-bottom:10px}
+.card.alert{box-shadow:inset 3px 0 0 var(--red)}
+.card .head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.card .nm{font-size:16px;font-weight:600;cursor:pointer}
+.badge{display:inline-block;font-size:11px;font-weight:500;background:var(--no);color:var(--not);border-radius:999px;padding:2px 8px;margin-inline-start:6px}
+.badge.ok{background:var(--ok);color:var(--okt)}
+.noteBtn{font-size:12px;padding:5px 10px;background:var(--seg)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tile{width:100%;border:none;border-radius:12px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none;-webkit-touch-callout:none}
+.tile b{font-size:18px;line-height:1.1}
+.tile i{font-style:normal;font-size:10px;opacity:.9}
+.ok{background:var(--ok);color:var(--okt)}
+.no{background:var(--no);color:var(--not)}
+.warn{background:var(--warn);color:var(--warnt)}
+.na{background:var(--na);color:var(--nat)}
+.nr{background:var(--nr);color:var(--nrt)}
 .extra{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .extra .wide{grid-column:1/-1}
 .extra label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
 .extra input{width:100%}
-.miss{font-size:12px;color:var(--warnt);background:var(--warn);border-radius:6px;padding:6px 8px;margin-top:10px}
 .unrec{font-size:12px;color:var(--muted);margin-top:8px}
-table{border-collapse:collapse;width:100%;font-size:12px;text-align:center;background:var(--card)}
-th,td{border:1px solid var(--border);padding:4px}
-th{background:var(--head)}
-td.sticky,th.sticky{position:sticky;right:0;z-index:1;background:var(--card)}
-th.sticky{background:var(--head)}
-td.warn{background:var(--warn);color:var(--warnt)}
-.nm{cursor:pointer;text-decoration:underline}
-.tbl-st{width:84px;padding:6px 2px;border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer;user-select:none;-webkit-touch-callout:none}
-input[type=number]{width:60px;padding:4px}
 .wrap{overflow-x:auto}
-.legend{font-size:12px;color:var(--muted);line-height:1.9;margin-top:12px}
-.report{background:var(--card);padding:12px;border-radius:12px}
-#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;z-index:60;max-width:90%;text-align:center}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-.sheetBox{background:var(--card);width:100%;max-width:520px;padding:16px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;gap:12px}
+table{border-collapse:separate;border-spacing:0 6px;width:100%;font-size:12px;text-align:center}
+th{font-weight:500;font-size:11px;color:var(--muted);padding:4px 3px}
+td{background:var(--card);padding:6px 3px}
+td:first-child{border-radius:0 12px 12px 0}
+td:last-child{border-radius:12px 0 0 12px}
+td.sticky,th.sticky{position:sticky;right:0;z-index:1}
+td.sticky{background:var(--card);font-weight:600;text-align:right;padding-right:10px;cursor:pointer}
+th.sticky{background:var(--bg)}
+.dot{width:34px;height:30px;border:none;border-radius:9px;padding:0;font-size:14px;font-weight:700}
+input[type=number]{width:60px;padding:4px}
+.legend{font-size:12px;color:var(--muted);line-height:1.9;margin-top:14px}
+.sumc{background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px}
+.sumc .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sumc .h .nm{font-weight:600;cursor:pointer}
+.line{display:grid;grid-template-columns:90px 1fr 54px;gap:8px;align-items:center;font-size:12px;margin:6px 0}
+.line span:last-child{text-align:left;color:var(--muted)}
+.pbar{height:8px;background:var(--seg);border-radius:99px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--green);border-radius:99px}
+.sumstats{font-size:11px;color:var(--muted);margin-top:8px}
+.report{background:var(--card);padding:12px;border-radius:16px}
+.report td{background:var(--bg)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;display:none;z-index:60;max-width:90%;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheetBox{background:var(--card);width:100%;max-width:520px;padding:16px;border-radius:20px 20px 0 0;display:flex;flex-direction:column;gap:12px}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.opts .opt{padding:12px 4px;border:none;border-radius:8px;color:#fff;font-size:15px}
-.opts .opt.cur{outline:3px solid var(--text)}
+.opts .opt{border:none;padding:14px 4px;border-radius:12px;font-size:15px;font-weight:500}
+.opts .opt.cur{box-shadow:0 0 0 2px var(--text) inset}
 .orow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 #printArea{display:none}
-@media (min-width:700px){
-  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-}
+@media (min-width:700px){.grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @page{size:A4 landscape;margin:8mm}
 @media print{
   body > *:not(#printArea){display:none !important}
@@ -111,17 +130,18 @@ input[type=number]{width:60px;padding:4px}
       </div>
       <button id="prevWk">السابق</button>
     </div>
-    <div class="bar" style="justify-content:space-between">
-      <span class="muted" id="count"></span>
-      <input id="search" placeholder="ابحث باسم الخادم" style="flex:1;min-width:120px;max-width:220px">
-    </div>
-    <div class="bar" style="margin-top:8px">
+    <div class="seg">
       <button id="vCards">كروت</button>
-      <button id="vTable">جدول كامل</button>
+      <button id="vTable">جدول</button>
       <button id="vSum">المجاميع</button>
-      <select id="missSel" style="padding:7px"><option value="">كل الخدام</option><option value="any">ناقص أي حاجة</option><option value="eftqad">ناقص افتقاد</option><option value="tasbeha">ناقص تسبحة</option><option value="tanawol">ناقص تناول</option></select>
-      <button id="undoBtn">تراجع</button>
-      <button id="menuBtn" style="margin-inline-start:auto">⋯ المزيد</button>
+    </div>
+    <div class="toolrow">
+      <input id="search" placeholder="ابحث باسم الخادم">
+      <select id="missSel"><option value="">كل الخدام</option><option value="any">ناقص أي حاجة</option><option value="eftqad">ناقص افتقاد</option><option value="tasbeha">ناقص تسبحة</option><option value="tanawol">ناقص تناول</option></select>
+    </div>
+    <div class="toolrow" style="justify-content:space-between">
+      <span class="muted" id="count"></span>
+      <span class="bar"><button id="undoBtn">تراجع</button><button id="menuBtn">المزيد</button></span>
     </div>
     <div class="status" id="status">محفوظ على هذا الجهاز</div>
     <div id="menu" class="panel hidden">
@@ -167,9 +187,7 @@ input[type=number]{width:60px;padding:4px}
     <table><thead id="thT"></thead><tbody id="rows"></tbody></table>
   </div>
 
-  <div id="sumView" class="wrap hidden">
-    <table><thead id="thS"></thead><tbody id="sumRows"></tbody></table>
-  </div>
+  <div id="sumView" class="hidden"></div>
 
   <div class="legend">
     الحضور: رمادي = لم يسجل، حضور / تأخير / غياب / لا ينطبق.<br>
@@ -483,27 +501,34 @@ function render(){
   if (!$("orderPanel").classList.contains("hidden")) renderOrder();
 }
 
+const ST = {
+  "تم":["ok","✓"], "حضور":["ok","✓"], "تحضير":["ok","+"], "إلقاء":["ok","◯"],
+  "لم يتم":["no","✗"], "غياب":["no","✗"], "تأخير":["warn","#"],
+  "لا ينطبق":["na","–"], "لم يسجل":["nr","·"]
+};
+function tileOf(label){ return ST[label] || ["nr","·"]; }
+
 function renderCards(w, list){
   if (!list.length) { $("cardsView").innerHTML = '<p class="muted">ما فيش خدام مطابقين.</p>'; return; }
   $("cardsView").innerHTML = list.map(n => {
     const r = rec(w, n);
     const miss = missing(n);
     const un = unrecorded(w, n);
-    const cells = items.map(i => {
-      const st = i.s[r[i.k]];
-      return `<div class="cell"><div class="lab">${i.l}</div>` +
-        `<button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></div>`;
+    const tiles = items.map(i => {
+      const [cls, icon] = tileOf(i.s[r[i.k]].t);
+      return `<button class="tile ${cls}" data-n="${esc(n)}" data-k="${i.k}"><b>${icon}</b><i>${i.l}</i></button>`;
     }).join("");
     return `<div class="card${miss.length ? " alert" : ""}">
-      <span class="nm" data-n="${esc(n)}">${esc(n)}</span>
-      <button class="noteBtn" data-addnote="${esc(n)}">📝 ملاحظة</button>
-      <div class="grid">${cells}</div>
+      <div class="head">
+        <span class="nm" data-n="${esc(n)}">${esc(n)}${miss.length ? `<span class="badge">ناقص ${esc(miss.join("، "))}</span>` : ""}</span>
+        <button class="noteBtn" data-addnote="${esc(n)}">📝 ملاحظة</button>
+      </div>
+      <div class="grid">${tiles}</div>
       <div class="extra">
         <label>تليفون<input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></label>
         <label>زيارة<input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></label>
         <label class="wide">ملاحظات<input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note"></label>
       </div>
-      ${miss.length ? `<div class="miss">ناقص (آخر 4 أسابيع): ${esc(miss.join("، "))}</div>` : ""}
       ${un.length ? `<div class="unrec">لم يسجل في الأسبوع ده: ${esc(un.join("، "))}</div>` : ""}
     </div>`;
   }).join("");
@@ -520,10 +545,11 @@ function renderTable(w, list){
   $("rows").innerHTML = list.map(n => {
     const r = rec(w, n);
     const cells = items.map(i => {
-      const st = i.s[r[i.k]];
-      return `<td><button class="tbl-st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></td>`;
+      const label = i.s[r[i.k]].t;
+      const [cls, icon] = tileOf(label);
+      return `<td><button class="dot ${cls}" data-n="${esc(n)}" data-k="${i.k}" title="${i.l}: ${label}">${icon}</button></td>`;
     }).join("");
-    return `<tr><td class="sticky nm" data-n="${esc(n)}" style="text-align:right">${esc(n)}</td>${cells}
+    return `<tr><td class="sticky nm" data-n="${esc(n)}">${esc(n)}</td>${cells}
       <td><input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></td>
       <td><input type="number" min="0" value="${r.visit}" data-n="${esc(n)}" data-k="visit"></td>
       <td><input value="${esc(r.note)}" data-n="${esc(n)}" data-k="note" style="width:120px"></td></tr>`;
@@ -531,15 +557,18 @@ function renderTable(w, list){
 }
 
 function renderSum(list){
-  $("thS").innerHTML = '<tr><th class="sticky">اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") +
-    '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
-  $("sumRows").innerHTML = list.map(n => {
+  if (!list.length) { $("sumView").innerHTML = '<p class="muted">ما فيش خدام مطابقين.</p>'; return; }
+  $("sumView").innerHTML = list.map(n => {
     const t = totals(n);
     const miss = missing(n);
-    const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}<br><small>${pct(t[i.k])}</small></td>`).join("");
-    const nameCls = miss.length ? "sticky nm warn" : "sticky nm";
-    const title = miss.length ? ` title="ناقص: ${esc(miss.join("، "))}"` : "";
-    return `<tr><td class="${nameCls}" data-n="${esc(n)}"${title} style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
+    const lines = items.map(i => {
+      const x = t[i.k];
+      const p = x.due ? Math.round(x.ok / x.due * 100) : 0;
+      return `<div class="line"><span>${i.l}</span><div class="pbar"><i style="width:${p}%"></i></div><span>${x.due ? x.ok + "/" + x.due : "—"}</span></div>`;
+    }).join("");
+    const badge = miss.length ? `<span class="badge">ناقص ${esc(miss.join("، "))}</span>` : `<span class="badge ok">تمام</span>`;
+    return `<div class="sumc"><div class="h"><span class="nm" data-n="${esc(n)}">${esc(n)}</span>${badge}</div>${lines}
+      <div class="sumstats">تليفون ${t.tel} · زيارة ${t.visit} · ملاحظات ${t.notes}</div></div>`;
   }).join("");
 }
 
@@ -567,7 +596,7 @@ function openPicker(n, k){
   $("pickerBox").innerHTML =
     `<b style="font-weight:500">${esc(n)} — ${it.l}</b>` +
     `<div class="opts">${it.s.map((s, idx) =>
-      `<button class="opt${idx===curVal?" cur":""}" style="background:${s.c}" data-pick="${idx}" data-n="${esc(n)}" data-k="${k}">${s.t}</button>`
+      `<button class="opt ${tileOf(s.t)[0]}${idx===curVal?" cur":""}" data-pick="${idx}" data-n="${esc(n)}" data-k="${k}">${tileOf(s.t)[1]} ${s.t}</button>`
     ).join("")}</div>` +
     `<button id="pickCancel">إلغاء</button>`;
   $("picker").classList.remove("hidden");
