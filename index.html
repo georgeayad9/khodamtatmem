@@ -12,7 +12,6 @@
 <link rel="manifest" href="manifest.json">
 <title>متابعة الخدام</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--bg:#fafafa;--card:#fff;--text:#222;--muted:#555;--border:#ddd;--btnb:#bbb;--head:#f2f2f2;--green:#1d6f42;--warn:#fde2e2;--warnt:#a32020}
 @media (prefers-color-scheme: dark){
@@ -39,6 +38,7 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding-bottom:8
 .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
 .panel .bar button{flex:1 1 auto}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px}
+.card.alert{border:2px solid var(--warnt)}
 .card .nm{font-size:17px;font-weight:500;text-decoration:none;display:block;margin-bottom:8px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .cell .lab{font-size:12px;color:var(--muted);margin-bottom:3px}
@@ -119,7 +119,7 @@ input[type=number]{width:60px;padding:4px}
       <button id="vCards">كروت</button>
       <button id="vTable">جدول كامل</button>
       <button id="vSum">المجاميع</button>
-      <button id="onlyMiss">ناقص فقط</button>
+      <select id="missSel" style="padding:7px"><option value="">كل الخدام</option><option value="any">ناقص أي حاجة</option><option value="eftqad">ناقص افتقاد</option><option value="tasbeha">ناقص تسبحة</option><option value="tanawol">ناقص تناول</option></select>
       <button id="undoBtn">تراجع</button>
       <button id="menuBtn" style="margin-inline-start:auto">⋯ المزيد</button>
     </div>
@@ -131,7 +131,7 @@ input[type=number]{width:60px;padding:4px}
         <button id="printWk">طباعة الأسبوع</button>
       </div>
       <div class="bar">
-        <button class="primary" id="pdfAll">نماذج لكل الخدام (ZIP)</button>
+        <button class="primary" id="pdfAll">PDF لكل الخدام</button>
         <button class="primary" id="exp">تصدير إكسيل</button>
       </div>
       <div class="bar">
@@ -144,6 +144,7 @@ input[type=number]{width:60px;padding:4px}
       </div>
       <div class="bar">
         <button id="addWk">أسبوع جديد</button>
+        <button id="addWkCopy">أسبوع جديد بنفس الحالات</button>
         <button class="danger" id="delWk">حذف الأسبوع الحالي</button>
       </div>
       <div class="bar">
@@ -254,7 +255,7 @@ let inSetup = false;
 let cur = 0;
 let fromD = "", toD = "";
 let view = "cards";
-let onlyMissing = false;
+let missFilter = "";
 let undoStack = [];
 let prevSnap = "";
 
@@ -284,6 +285,7 @@ function cascade(w, n, key, value){
 function ensureState(){
   if (!Array.isArray(S.servants)) S.servants = [];
   if (!Array.isArray(S.weeks)) S.weeks = [];
+  if (!S.notes || typeof S.notes !== "object") S.notes = {};
   if (!S.weeks.length) S.weeks.push({date: today(), rec: {}});
   S.weeks.sort(byDate);
   S.weeks.forEach(w => {
@@ -421,7 +423,7 @@ function showReport(n){
     return `<tr><td>${esc(wk.date)}</td>` + items.map(i => `<td>${i.s[r[i.k]].t}</td>`).join("") +
       `<td>${r.tel}</td><td>${r.visit}</td><td>${esc(r.note)}</td></tr>`;
   }).join("");
-  const sumCells = items.map(i => `<td><b>${t[i.k].ok} من ${t[i.k].due}</b></td>`).join("");
+  const sumCells = items.map(i => `<td><b>${t[i.k].ok} من ${t[i.k].due}</b><br><small>${pct(t[i.k])}</small></td>`).join("");
   const months = {};
   w.forEach(wk => { const m = wk.date.slice(0, 7); (months[m] = months[m] || []).push(wk); });
   const monthRows = Object.keys(months).sort().map(m => {
@@ -437,14 +439,18 @@ function showReport(n){
     `<div class="wrap"><table><thead><tr><th>الشهر</th>${items.map(i=>`<th>${i.l}</th>`).join("")}</tr></thead><tbody>${monthRows}</tbody></table></div>`;
   $("main").classList.add("hidden");
   $("setup").classList.add("hidden");
+  const noteItems = (S.notes[n] || []).slice().reverse().map(x => `<li>${esc(x.date)} — ${esc(x.text)}</li>`).join("") || '<li class="muted">ما فيش ملاحظات</li>';
+  $("reportBody").innerHTML += `<h3 style="margin:14px 0 6px;font-size:16px;font-weight:500">سجل الملاحظات</h3><ul>${noteItems}</ul>`;
   $("report").classList.remove("hidden");
 }
+
+function pct(x){ return x.due ? Math.round(x.ok / x.due * 100) + "%" : "—"; }
 
 /* ---------- render ---------- */
 function visibleServants(w){
   const q = $("search").value.trim();
   return S.servants.filter(n =>
-    (!q || n.includes(q)) && (!onlyMissing || missing(n).length > 0)
+    (!q || n.includes(q)) && (!missFilter || (missFilter === "any" ? missing(n).length > 0 : missing(n).includes(WARN_KEYS.find(x => x.k === missFilter).l)))
   );
 }
 function render(){
@@ -457,11 +463,12 @@ function render(){
   $("wkName").textContent = `الأسبوع ${cur+1}`;
   $("wkDate").value = w.date;
   const recCount = S.servants.filter(n => recorded(w, n)).length;
-  $("count").textContent = `مسجّل: ${recCount} من ${S.servants.length}`;
+  const missCount = S.servants.filter(n => missing(n).length > 0).length;
+  $("count").textContent = `مسجّل: ${recCount} من ${S.servants.length} · ناقص: ${missCount}`;
   $("fromD").value = fromD;
   $("toD").value = toD;
   $("delSel").innerHTML = S.servants.map(n => `<option>${esc(n)}</option>`).join("");
-  $("onlyMiss").classList.toggle("on", onlyMissing);
+  $("missSel").value = missFilter;
   $("undoBtn").disabled = !undoStack.length;
 
   ["vCards","vTable","vSum"].forEach(id => $(id).classList.remove("on"));
@@ -487,8 +494,9 @@ function renderCards(w, list){
       return `<div class="cell"><div class="lab">${i.l}</div>` +
         `<button class="st" style="background:${st.c}" data-n="${esc(n)}" data-k="${i.k}">${st.t}</button></div>`;
     }).join("");
-    return `<div class="card">
+    return `<div class="card${miss.length ? " alert" : ""}">
       <span class="nm" data-n="${esc(n)}">${esc(n)}</span>
+      <button class="noteBtn" data-addnote="${esc(n)}">📝 ملاحظة</button>
       <div class="grid">${cells}</div>
       <div class="extra">
         <label>تليفون<input type="number" min="0" value="${r.tel}" data-n="${esc(n)}" data-k="tel"></label>
@@ -528,7 +536,7 @@ function renderSum(list){
   $("sumRows").innerHTML = list.map(n => {
     const t = totals(n);
     const miss = missing(n);
-    const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}</td>`).join("");
+    const cells = items.map(i => `<td>${t[i.k].ok} من ${t[i.k].due}<br><small>${pct(t[i.k])}</small></td>`).join("");
     const nameCls = miss.length ? "sticky nm warn" : "sticky nm";
     const title = miss.length ? ` title="ناقص: ${esc(miss.join("، "))}"` : "";
     return `<tr><td class="${nameCls}" data-n="${esc(n)}"${title} style="text-align:right">${esc(n)}</td>${cells}<td>${t.tel}</td><td>${t.visit}</td><td>${t.notes}</td></tr>`;
@@ -542,6 +550,13 @@ function renderOrder(){
       `<button data-move="up" data-i="${i}" ${i===0?"disabled":""}>▲</button>` +
       `<button data-move="down" data-i="${i}" ${i===S.servants.length-1?"disabled":""}>▼</button></span></div>`
     ).join("");
+}
+
+function addNote(n){
+  const text = prompt("اكتب الملاحظة لـ " + n);
+  if (!text || !text.trim()) return;
+  (S.notes[n] = S.notes[n] || []).push({date: today(), text: text.trim()});
+  changed();
 }
 
 /* ---------- picker (long press or right click) ---------- */
@@ -610,6 +625,8 @@ document.addEventListener("click", e => {
     changed();
     return;
   }
+  const an = e.target.closest("[data-addnote]");
+  if (an) { addNote(an.dataset.addnote); return; }
   const nm = e.target.closest(".nm");
   if (nm && nm.dataset.n) { showReport(nm.dataset.n); return; }
   const b = e.target.closest("button[data-k][data-n]");
@@ -755,6 +772,7 @@ $("delBtn").onclick = () => {
   if (!confirm(`هتحذف "${name}" وكل بياناته في كل الأسابيع. متأكد؟`)) return;
   S.servants = S.servants.filter(n => n !== name);
   S.weeks.forEach(w => { delete w.rec[name]; });
+  delete S.notes[name];
   changed();
 };
 $("orderBtn").onclick = () => {
@@ -773,16 +791,23 @@ $("wkDate").onchange = e => {
   cur = S.weeks.indexOf(w);
   changed();
 };
-$("addWk").onclick = () => {
+function newWeek(copy){
   const last = S.weeks[S.weeks.length - 1];
   const nw = {date: addDays(last.date, 7), rec: {}};
+  if (copy) S.servants.forEach(n => {
+    const src = rec(last, n), dst = blank();
+    items.forEach(i => dst[i.k] = src[i.k]);
+    nw.rec[n] = dst;
+  });
   S.weeks.push(nw);
   S.weeks.sort(byDate);
   cur = S.weeks.indexOf(nw);
   ensureState();
   closeMenu();
   changed();
-};
+}
+$("addWk").onclick = () => newWeek(false);
+$("addWkCopy").onclick = () => newWeek(true);
 $("delWk").onclick = () => {
   if (S.weeks.length <= 1) { alert("لازم يفضل أسبوع واحد على الأقل"); return; }
   if (!confirm(`هتحذف الأسبوع ${cur+1} (${S.weeks[cur].date}) بكل بياناته؟`)) return;
@@ -796,7 +821,7 @@ $("delWk").onclick = () => {
 $("vCards").onclick = () => setView("cards");
 $("vTable").onclick = () => setView("table");
 $("vSum").onclick = () => setView("sum");
-$("onlyMiss").onclick = () => { onlyMissing = !onlyMissing; render(); };
+$("missSel").onchange = e => { missFilter = e.target.value; render(); };
 $("undoBtn").onclick = undo;
 $("menuBtn").onclick = () => $("menu").classList.toggle("hidden");
 $("search").oninput = () => render();
@@ -849,103 +874,7 @@ function exportPdf(list){
   pa.style.cssText = "";
   window.print();
 }
-/* ---------- official form (التربية الكنسية - تتميم الخدام - 1743) ---------- */
-// rows follow the printed form: 20 Sundays per period, matched to weeks by date
-const TPL_P1 = ["2026-10-23","2026-10-30","2026-11-06","2026-11-13","2026-11-20","2026-11-27","2026-12-04","2026-12-11","2026-12-18","2026-12-25","2027-01-01","2027-01-08","2027-01-15","2027-01-22","2027-01-29","2027-02-05","2027-02-12","2027-02-19","2027-02-26","2027-03-05"];
-const TPL_P2 = ["2027-03-12","2027-03-19","2027-03-26","2027-04-02","2027-04-09","2027-04-16","2027-04-23","2027-04-30","2027-05-07","2027-05-14","2027-05-21","2027-05-28","2027-06-04","2027-06-11","2027-06-18","2027-06-25","2027-07-02","2027-07-09","2027-07-16","2027-07-23"];
-// columns left to right, as printed in each period block
-const FORM_COLS = [
-  {k:"shamas", h:"خدمة شماس"},
-  {k:"tasbeha", h:"تسبحة نصف الليل"},
-  {k:"ashiya", h:"عشية"},
-  {k:"etiraf", h:"اعتراف"},
-  {k:"tanawol", h:"تناول"},
-  {k:"rkh", h:"يوم روحي خدام"},
-  {k:"rmk", h:"يوم روحي مخدومين"},
-  {k:"ejtema", h:"اجتماع الأسرة"},
-  {k:"tel", h:"تليفون #", num:true},
-  {k:"visit", h:"زيارة #", num:true},
-  {k:"lesson", h:"تحضير + / إلقاء الدرس O"},
-  {k:"att", h:"حضور في الميعاد / تأخير #"},
-  {k:"salat", h:"صلاة قبل الخدمة"}
-];
-function formSym(w, n, c){
-  if (!w) return "";
-  const r = rec(w, n);
-  if (c.num) return r[c.k] ? r[c.k] : "";
-  const label = items.find(i => i.k === c.k).s[r[c.k]].t;
-  if (label === "لم يسجل") return "";
-  if (label === "لا ينطبق") return "—";
-  if (c.k === "lesson") {
-    if (label === "تحضير") return "+";
-    if (label === "إلقاء") return '<span class="circ">+</span>';
-    return "-";
-  }
-  if (c.k === "att") return label === "حضور" ? "+" : label === "تأخير" ? "#" : "-";
-  return label === "تم" ? "+" : "-";
-}
-// the printed date is the Friday after the app's week, so the app date is one day earlier
-const weekFor = printed => S.weeks.find(x => x.date === addDays(printed, -1));
-function formTot(t, c){
-  if (c.k === "tel") return t.tel;
-  if (c.k === "visit") return t.visit;
-  return t[c.k].ok + "/" + t[c.k].due;
-}
-function formHtml(n){
-  const w1 = TPL_P1.map(weekFor);
-  const w2 = TPL_P2.map(weekFor);
-  const t1 = totals(n, w1.filter(Boolean));
-  const t2 = totals(n, w2.filter(Boolean));
-  const heads = FORM_COLS.map(c => `<th>${c.h}</th>`).join("");
-  const block = (w) => FORM_COLS.map(c => `<td>${formSym(w, n, c)}</td>`).join("");
-  const rows = TPL_P2.map((d2, i) =>
-    `<tr>${block(w2[i])}<td class="dt">${d2}</td>${block(w1[i])}<td class="dt">${TPL_P1[i]}</td></tr>`
-  ).join("");
-  const totRow = `<tr class="tot">${FORM_COLS.map(c => `<td>${formTot(t2, c)}</td>`).join("")}<td class="dt">إجمالى</td>` +
-    `${FORM_COLS.map(c => `<td>${formTot(t1, c)}</td>`).join("")}<td class="dt">إجمالى</td></tr>`;
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<title>${esc(n)} - تتميم الخدام</title>
-<style>
-@page{size:A4 landscape;margin:8mm}
-body{font-family:Tahoma,Arial,sans-serif;color:#000;background:#fff;margin:0}
-.head{text-align:center;margin-bottom:3mm}
-.head .v{font-size:11pt;font-weight:bold}
-.head .t{font-size:12pt;font-weight:bold;margin-top:1mm}
-.fields{display:flex;justify-content:space-between;font-size:10pt;margin:2mm 0;border-bottom:1px dotted #000;padding-bottom:1mm}
-table{width:100%;border-collapse:collapse;table-layout:fixed;direction:ltr;font-size:8pt}
-th,td{border:1px solid #000;padding:0 1px;text-align:center;height:6.2mm;color:#000;background:#fff;overflow:hidden}
-th{font-size:7pt;height:auto;padding:2px 1px}
-.dt{width:17mm;font-size:7.5pt;font-weight:bold}
-.tot td{font-weight:bold}
-.circ{display:inline-block;width:4.2mm;height:4.2mm;border:1px solid #000;border-radius:50%;vertical-align:middle;line-height:4.2mm;font-size:8pt;font-weight:bold;text-align:center}
-.noprint{margin:4px 0 10px;padding:8px 14px}
-@media print{.noprint{display:none}}
-</style></head><body>
-<button class="noprint" onclick="window.print()">طباعة / حفظ كـ PDF</button>
-<div class="head">
-  <div class="v">+ انظر الي الخدمة التى قبلتها فى الرب لكي تتممها كو:4 17 +</div>
-  <div class="t">التربية الكنسية - تتميم الخدام - 1743 ش</div>
-</div>
-<div class="fields"><span>الاسم: <b>${esc(n)}</b></span><span>الخورس: ..........................</span><span>الفصل: ..........................</span></div>
-<table>
-  <thead><tr>${heads}<th class="dt">الفترة الثانية</th>${heads}<th class="dt">الفترة الأولى</th></tr></thead>
-  <tbody>${rows}${totRow}</tbody>
-</table>
-</body></html>`;
-}
-$("pdfAll").onclick = async () => {
-  closeMenu();
-  if (!S.servants.length) { alert("ما فيش خدام"); return; }
-  if (typeof JSZip === "undefined") { alert("لازم يكون فيه نت أول مرة عشان نحمّل مكتبة الضغط"); return; }
-  const zip = new JSZip();
-  S.servants.forEach(n => zip.file(n + ".html", formHtml(n)));
-  const blob = await zip.generateAsync({type: "blob"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "نماذج_تتميم_الخدام.zip";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-};
+$("pdfAll").onclick = () => { closeMenu(); exportPdf(S.servants); };
 $("printWk").onclick = () => {
   const w = S.weeks[cur];
   const head = '<tr><th>اسم الخادم</th>' + items.map(i=>`<th>${i.l}</th>`).join("") + '<th>تليفون</th><th>زيارة</th><th>ملاحظات</th></tr>';
@@ -1028,6 +957,10 @@ $("exp").onclick = () => {
   XLSX.writeFile(wb, "متابعة_الخدام.xlsx");
 };
 
+window.addEventListener("beforeunload", e => {
+  if (dirty && accessCode) { e.preventDefault(); e.returnValue = ""; }
+});
+
 /* ---------- start ---------- */
 load();
 ensureState();
@@ -1048,4 +981,3 @@ window.addEventListener("offline", () => setStatus("مفيش نت، التعدي
 </script>
 </body>
 </html>
-
